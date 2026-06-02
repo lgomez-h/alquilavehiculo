@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <types>
+        <members>VRT_Vehicle__c</members>
+        <members>VRT_Rental__c</members>
+        <name>CustomObject</name>
+    </types>
+
+    <types>
+        <members>Account.VRT_TXT_Email__c</members>
+        <members>Account.VRT_TXT_ExternalId__c</members>
+        <name>CustomField</name>
+    </types>
+
+    <types>
+        <members>VRT_TRG_RentalHandler</members>
+        <members>VRT_TRG_RentalHandlerHelper</members>
+        <members>VRT_TRG_Rental_Test</members>
+        <members>VRT_CLS_CheckVehicleRevision</members>
+        <members>VRT_CLS_CheckVehicleRevision_Test</members>
+        <members>VRT_CLS_VehicleRevisionSchedule</members>
+        <members>VRT_CLS_VehicleRevisionSchedule_Test</members>
+        <name>ApexClass</name>
+    </types>
+
+    <types>
+        <members>VRT_TRG_Rental</members>
+        <name>ApexTrigger</name>
+    </types>
+
+    <types>
+        <members>VRT_FLW_CreateRental</members>
+        <name>Flow</name>
+    </types>
+
+    <types>
+        <members>VRT_VehicleRentalSL</members>
+        <name>CustomApplication</name>
+    </types>
+
+    <types>
+        <members>*</members>
+        <name>Layout</name>
+    </types>
+
+    <types>
+        <members>*</members>
+        <name>FlexiPage</name>
+    </types>
+
+    <types>
+        <members>*</members>
+        <name>ReportType</name>
+    </types>
+
+    <!-- Reports: carpeta (FolderName) + DeveloperName -->
+    <types>
+        <members>VRT Carpeta de Informes AlquilaVehículo/VRT_ActiveAccountsIndustry_Report</members>
+        <members>VRT Carpeta de Informes AlquilaVehículo/VRT_BrandVehicleDuration_Report</members>
+        <members>VRT Carpeta de Informes AlquilaVehículo/VRT_RentalsLastMonthStatus_Report</members>
+        <members>VRT Carpeta de Informes AlquilaVehículo/VRT_SLA_AccountRental_Cost_Report</members>
+        <members>VRT Carpeta de Informes AlquilaVehículo/VRT_VehicleTypeStatusAvailability_Report</members>
+        <name>Report</name>
+    </types>
+
+    <!-- Dashboards: de momento lo quitamos hasta localizarlo -->
+    <!-- <types>...</types> -->
+
+    <types>
+        <members>*</members>
+        <name>PermissionSet</name>
+    </types>
+
+    <version>59.0</version>
+</Package>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VRT_FLG_NeedsInspection__c</fullName>
+    <defaultValue>false</defaultValue>
+    <externalId>false</externalId>
+    <label>Necesita_Revision_ITV</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
