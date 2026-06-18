@@ -12,10 +12,10 @@
     </values>
     <values>
         <field>VRT_TXT_Season__c</field>
-        <value xsi:type="xsd:string">alta</value>
+        <value xsi:type="xsd:string">Alta</value>
     </values>
     <values>
         <field>VRT_TXT_VehicleType__c</field>
-        <value xsi:type="xsd:string">moto</value>
+        <value xsi:type="xsd:string">Moto</value>
     </values>
 </CustomMetadata>
