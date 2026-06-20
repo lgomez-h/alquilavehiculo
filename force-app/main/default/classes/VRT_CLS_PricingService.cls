@@ -36,4 +36,21 @@ public with sharing class VRT_CLS_PricingService {
     ) {
         return vehicleType + '_' + season;
     }
+    public static String calculateSeason(Date rentalDate) {
+        Integer monthNumber = rentalDate.month();
+       if (monthNumber == 1 ||
+            monthNumber == 4 ||
+            monthNumber == 7 || 
+            monthNumber == 8 ||
+            monthNumber == 12) {
+        return 'Alta';
+        } else if (monthNumber == 2 ||
+            monthNumber == 5 ||
+            monthNumber == 6 ||
+            monthNumber == 9 ) {
+            return 'Media';
+        } else {
+            return 'Baja';
+        }
+    }
 }

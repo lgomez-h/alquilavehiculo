@@ -78,4 +78,40 @@ private class VRT_CLS_PricingService_Test {
     static void testGetPricingRuleMotoLow() {
         verifyPricingRule('Moto', 'Baja', 25);
     }
+
+    private static void verifySeason(
+    Date rentalDate,
+    String expectedSeason
+    ){
+        // ========= ACT =========
+        String season = VRT_CLS_PricingService.calculateSeason(rentalDate);
+
+        // ========= ASSERT =========
+        System.assertEquals(
+            expectedSeason,
+            season,
+            'La temporada calculada no es la esperada.'
+        );
+    }
+    @IsTest
+    static void testCalculateSeasonHigh() {
+    verifySeason(
+        Date.newInstance(2026, 7, 15),
+        'Alta'
+    );
+    }
+    @IsTest
+    static void testCalculateSeasonMedium() {
+    verifySeason(
+        Date.newInstance(2026, 5, 15),
+        'Media'
+    );
+    }
+    @IsTest
+    static void testCalculateSeasonLow() {
+    verifySeason(
+        Date.newInstance(2026, 10, 15),
+        'Baja'
+    );
+    }
 }
