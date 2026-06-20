@@ -114,4 +114,41 @@ private class VRT_CLS_PricingService_Test {
         'Baja'
     );
     }
+    private static void verifyBasePrice(
+    String vehicleType,
+    Date startDate,
+    Date endDate,
+    Decimal expectedPrice
+) {
+    Decimal basePrice =
+        VRT_CLS_PricingService.calculateBasePrice(
+            vehicleType,
+            startDate,
+            endDate
+        );
+
+    System.assertEquals(
+        expectedPrice,
+        basePrice,
+        'El precio base calculado no es el esperado.'
+    );
+}
+@IsTest
+static void testCalculateBasePriceSameSeason() {
+    verifyBasePrice(
+        'Coche',
+        Date.newInstance(2026, 7, 1),
+        Date.newInstance(2026, 7, 4),
+        240
+    );
+}
+@IsTest
+static void testCalculateBasePriceCrossSeason() {
+    verifyBasePrice(
+        'Coche',
+        Date.newInstance(2026, 8, 30),
+        Date.newInstance(2026, 9, 2),
+        220
+    );
+}
 }

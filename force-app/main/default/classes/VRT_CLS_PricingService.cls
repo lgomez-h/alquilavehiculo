@@ -53,4 +53,35 @@ public with sharing class VRT_CLS_PricingService {
             return 'Baja';
         }
     }
+    public static Decimal calculateBasePrice(
+    String vehicleType,
+    Date startDate,
+    Date endDate
+    ) {
+        Date currentDate = startDate;
+        Decimal totalPrice = 0;
+
+        while (currentDate < endDate) {
+            String season = calculateSeason(currentDate);
+
+            VRT_PricingRule__mdt rule =
+                getPricingRule(vehicleType, season);
+
+                if (rule == null) {
+                    throw new IllegalArgumentException(
+                    'No existe una tarifa configurada para el vehículo "' +
+                    vehicleType +
+                    '" en temporada "' +
+                    season +
+                    '".'
+                    );
+        }
+
+            totalPrice += rule.VRT_NUM_PricePerDay__c;
+
+            currentDate = currentDate.addDays(1);
+        }
+
+    return totalPrice;
+}
 }
