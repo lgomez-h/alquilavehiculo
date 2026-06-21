@@ -1,5 +1,8 @@
 public with sharing class VRT_CLS_PricingService {
 
+    private static final Integer LOYALTY_RENTALS = 3;
+    private static final Decimal LOYALTY_DISCOUNT = 0.05;
+    
     private static Map<String, VRT_PricingRule__mdt> pricingRules;
 
     public static VRT_PricingRule__mdt getPricingRule(
@@ -86,4 +89,21 @@ public with sharing class VRT_CLS_PricingService {
 
     return totalPrice;
 }
+
+    public static Decimal applyLoyaltyDiscount(
+        Decimal basePrice,
+        Id accountId
+    ) {
+
+        Integer completedRentals =
+            VRT_CLS_RentalService.countCompletedRentalsLast12Months(
+                accountId
+         );
+
+        if (completedRentals >= LOYALTY_RENTALS) {
+            return basePrice - (basePrice * LOYALTY_DISCOUNT);
+        }
+
+        return basePrice;
+    }
 }

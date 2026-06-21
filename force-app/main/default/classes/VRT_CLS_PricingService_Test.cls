@@ -151,4 +151,119 @@ static void testCalculateBasePriceCrossSeason() {
         220
     );
 }
+private static void verifyLoyaltyDiscount(
+    Decimal basePrice,
+    Id accountId,
+    Decimal expectedPrice
+)
+{
+    Decimal finalPrice =
+        VRT_CLS_PricingService.applyLoyaltyDiscount(
+            basePrice,
+            accountId
+        );
+
+    System.assertEquals(
+        expectedPrice,
+        finalPrice,
+        'El precio final con descuento no es el esperado.'
+    );
+}
+@testSetup
+    static void setupData() {
+    Account account = new Account(
+        Name = 'Cliente Test'
+    );
+    insert account;
+
+    Account account2 = new Account(
+        Name = 'Cliente Test 2'
+    );
+    insert account2;
+
+    List<VRT_Rental__c> rentals = new List<VRT_Rental__c>();
+
+    rentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_SEL_Status__c = 'Completado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addMonths(-2),
+        VRT_DAT_FinalDate__c = Date.today().addMonths(-2).addDays(3)
+    ));
+
+    rentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_SEL_Status__c = 'Completado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addMonths(-4),
+        VRT_DAT_FinalDate__c = Date.today().addMonths(-4).addDays(3)
+    ));
+
+    rentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_SEL_Status__c = 'Completado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addMonths(-6),
+        VRT_DAT_FinalDate__c = Date.today().addMonths(-6).addDays(3)
+    ));
+
+    rentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_SEL_Status__c = 'Cancelado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addMonths(-1),
+        VRT_DAT_FinalDate__c = Date.today().addMonths(-1).addDays(2)
+    ));
+
+    rentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_SEL_Status__c = 'Completado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addMonths(-18),
+        VRT_DAT_FinalDate__c = Date.today().addMonths(-18).addDays(2)
+    ));
+
+    rentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account2.Id,
+        VRT_SEL_Status__c = 'Completado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addMonths(-3),
+        VRT_DAT_FinalDate__c = Date.today().addMonths(-3).addDays(3)
+    ));
+
+    insert rentals;
+    }
+
+@IsTest
+static void testApplyLoyaltyDiscountYes() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    verifyLoyaltyDiscount(
+        200,
+        account.Id,
+        190
+    );
+}
+@IsTest
+static void testApplyLoyaltyDiscountNo() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test 2'
+        LIMIT 1
+    ];
+
+    verifyLoyaltyDiscount(
+        200,
+        account.Id,
+        200
+    );
+}
 }
