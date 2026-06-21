@@ -36,6 +36,7 @@ public with sharing class VRT_CLS_PricingService {
     ) {
         return vehicleType + '_' + season;
     }
+
     public static String calculateSeason(Date rentalDate) {
         Integer monthNumber = rentalDate.month();
        if (monthNumber == 1 ||
@@ -53,6 +54,7 @@ public with sharing class VRT_CLS_PricingService {
             return 'Baja';
         }
     }
+
     public static Decimal calculateBasePrice(
     String vehicleType,
     Date startDate,
@@ -75,7 +77,7 @@ public with sharing class VRT_CLS_PricingService {
                     season +
                     '".'
                     );
-        }
+            }
 
             totalPrice += rule.VRT_NUM_PricePerDay__c;
 
