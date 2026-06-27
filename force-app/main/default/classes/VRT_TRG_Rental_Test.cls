@@ -196,4 +196,109 @@ public with sharing class VRT_TRG_Rental_Test {
         VRT_Vehicle__c updated = [SELECT VRT_NUM_Mileage__c FROM VRT_Vehicle__c WHERE Id = :v.Id];
         System.assertEquals(600, updated.VRT_NUM_Mileage__c, '200 * 3 = 600');
     }
+
+    @IsTest
+    static void testSetActualReturnDateWhenCompleted() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today(),
+        VRT_DAT_FinalDate__c = Date.today().addDays(3)
+    );
+    insert rental;
+
+    // ========= ACT =========
+
+    rental.VRT_SEL_Status__c = 'Completado';
+    update rental;
+
+    // ========= ASSERT =========
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_DAT_ActualReturnDate__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertNotEquals(
+    null,
+    updatedRental.VRT_DAT_ActualReturnDate__c,
+    'La fecha real de devolución debería haberse rellenado.'
+    );
+
+    System.assertEquals(
+    Date.today(),
+    updatedRental.VRT_DAT_ActualReturnDate__c,
+    'La fecha real de devolución debería ser la fecha de hoy.'
+    );
+}
+
+@IsTest
+static void testDoNotOverwriteActualReturnDateWhenCompleted() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    Date originalReturnDate = Date.today().addDays(-2);
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(-5),
+        VRT_DAT_FinalDate__c = Date.today(),
+        VRT_DAT_ActualReturnDate__c = originalReturnDate
+    );
+
+    insert rental;
+
+    // ========= ACT =========
+
+    rental.VRT_SEL_Status__c = 'Completado';
+
+    update rental;
+
+    // ========= ASSERT =========
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_DAT_ActualReturnDate__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        originalReturnDate,
+        updatedRental.VRT_DAT_ActualReturnDate__c,
+        'La fecha real de devolución no debería sobrescribirse.'
+    );
+}
 }

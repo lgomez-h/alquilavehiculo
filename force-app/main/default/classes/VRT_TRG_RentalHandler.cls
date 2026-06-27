@@ -13,6 +13,9 @@ public with sharing class VRT_TRG_RentalHandler {
         Map<Id,VRT_Rental__c> oldMap,
         Map<Id,VRT_Rental__c> newMap) 
     {
-
-}
+        VRT_TRG_RentalHandlerHelper.setActualReturnDateWhenCompleted(
+        oldMap,
+        newMap
+    );
+    }
 }

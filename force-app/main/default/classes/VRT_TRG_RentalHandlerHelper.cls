@@ -113,4 +113,24 @@ public with sharing class VRT_TRG_RentalHandlerHelper {
         if (uses <= 1000) return 'Bastante desgastado';
         return 'Deplorable';
     }
+    public static void setActualReturnDateWhenCompleted(
+    Map<Id, VRT_Rental__c> oldMap,
+    Map<Id, VRT_Rental__c> newMap
+) {
+    for (Id rentalId : newMap.keySet()) {
+        VRT_Rental__c oldR = oldMap.get(rentalId);
+        VRT_Rental__c newR = newMap.get(rentalId);
+
+        Boolean changedToCompleted =
+            oldR.VRT_SEL_Status__c != 'Completado' &&
+            newR.VRT_SEL_Status__c == 'Completado';
+
+        Boolean actualReturnDateIsEmpty =
+            newR.VRT_DAT_ActualReturnDate__c == null;
+
+        if (changedToCompleted && actualReturnDateIsEmpty) {
+            newR.VRT_DAT_ActualReturnDate__c = Date.today();
+        }
+    }
+}
 }
