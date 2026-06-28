@@ -266,4 +266,73 @@ static void testApplyLoyaltyDiscountNo() {
         200
     );
 }
+
+
+private static void verifyLatePenalty(
+    Decimal currentPrice,
+    String vehicleType,
+    Date expectedReturnDate,
+    Date actualReturnDate,
+    Decimal expectedPrice
+    ) {
+    Decimal finalPrice =
+        VRT_CLS_PricingService.applyLatePenalty(
+            currentPrice,
+            vehicleType,
+            expectedReturnDate,
+            actualReturnDate
+        );
+
+    System.assertEquals(
+        expectedPrice,
+        finalPrice,
+        'La penalización por retraso no es la esperada.'
+    );
+}
+
+@IsTest
+static void testApplyLatePenaltyNoDelay() {
+    verifyLatePenalty(
+        240,
+        'Coche',
+        Date.newInstance(2026, 7, 10),
+        Date.newInstance(2026, 7, 10),
+        240
+    );
+}
+
+@IsTest
+static void testApplyLatePenaltyWithDelaySameSeason() {
+    verifyLatePenalty(
+        240,
+        'Coche',
+        Date.newInstance(2026, 7, 10),
+        Date.newInstance(2026, 7, 12),
+        440
+    );
+}
+
+@IsTest
+static void testApplyLatePenaltyDifferentSeason() {
+
+    verifyLatePenalty(
+        400,
+        'Coche',
+        Date.newInstance(2026, 8, 30),
+        Date.newInstance(2026, 9, 2),
+        650
+    );
+}
+
+
+@IsTest
+static void testApplyLatePenaltyNullActualReturnDate() {
+    verifyLatePenalty(
+        240,
+        'Coche',
+        Date.newInstance(2026, 7, 10),
+        null,
+        240
+    );
+}
 }

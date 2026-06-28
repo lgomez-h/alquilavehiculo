@@ -106,4 +106,52 @@ public with sharing class VRT_CLS_PricingService {
 
         return basePrice;
     }
+
+    public static Decimal applyLatePenalty(
+    Decimal currentPrice,
+    String vehicleType,
+    Date expectedReturnDate,
+    Date actualReturnDate
+    ) {
+    if (
+        actualReturnDate == null ||
+        actualReturnDate <= expectedReturnDate
+    ) {
+        return currentPrice;
+    }
+
+    Decimal finalPrice = currentPrice;
+
+    Date currentDate = expectedReturnDate.addDays(1);
+
+    while (currentDate <= actualReturnDate) {
+        String season = calculateSeason(currentDate);
+
+        VRT_PricingRule__mdt rule =
+            getPricingRule(vehicleType, season);
+
+        if (rule == null) {
+            throw new IllegalArgumentException(
+                'No existe una tarifa configurada para el vehículo "' +
+                vehicleType +
+                '" en temporada "' +
+                season +
+                '".'
+            );
+        }
+
+        Decimal dailyPrice = rule.VRT_NUM_PricePerDay__c;
+
+        finalPrice += dailyPrice;
+        finalPrice += dailyPrice * 0.25;
+
+        currentDate = currentDate.addDays(1);
+    }
+
+    return finalPrice;
+    }
+
+  
+
+    
 }
