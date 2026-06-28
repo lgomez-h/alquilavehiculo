@@ -151,6 +151,37 @@ public with sharing class VRT_CLS_PricingService {
     return finalPrice;
     }
 
+    public static Decimal calculateFinalPrice(
+    String vehicleType,
+    Date startDate,
+    Date expectedReturnDate,
+    Id accountId,
+    Date actualReturnDate
+    ) {
+    Decimal finalPrice =
+        calculateBasePrice(
+            vehicleType,
+            startDate,
+            expectedReturnDate
+        );
+
+    finalPrice =
+        applyLoyaltyDiscount(
+            finalPrice,
+            accountId
+        );
+
+    finalPrice =
+        applyLatePenalty(
+            finalPrice,
+            vehicleType,
+            expectedReturnDate,
+            actualReturnDate
+        );
+
+    return finalPrice;
+    }
+
   
 
     

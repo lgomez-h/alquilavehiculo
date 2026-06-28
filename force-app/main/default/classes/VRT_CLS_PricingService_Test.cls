@@ -335,4 +335,70 @@ static void testApplyLatePenaltyNullActualReturnDate() {
         240
     );
 }
+
+
+private static void verifyFinalPrice(
+    String vehicleType,
+    Date startDate,
+    Date expectedReturnDate,
+    Id accountId,
+    Date actualReturnDate,
+    Decimal expectedPrice
+) {
+    Decimal finalPrice =
+        VRT_CLS_PricingService.calculateFinalPrice(
+            vehicleType,
+            startDate,
+            expectedReturnDate,
+            accountId,
+            actualReturnDate
+        );
+
+    System.assertEquals(
+        expectedPrice,
+        finalPrice,
+        'El precio final calculado no es el esperado.'
+    );
+}
+
+@IsTest
+static void testCalculateFinalPriceWithLoyaltyNoDelay() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    verifyFinalPrice(
+        'Coche',
+        Date.newInstance(2026, 7, 1),
+        Date.newInstance(2026, 7, 4),
+        account.Id,
+        null,
+        228
+    );
+}
+
+@IsTest
+static void testCalculateFinalPriceWithLoyaltyAndLatePenalty() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    verifyFinalPrice(
+        'Coche',
+        Date.newInstance(2026, 7, 1),
+        Date.newInstance(2026, 7, 4),
+        account.Id,
+        Date.newInstance(2026, 7, 5),
+        328
+    );
+}
+
 }
