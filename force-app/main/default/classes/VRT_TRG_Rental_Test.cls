@@ -301,4 +301,178 @@ static void testDoNotOverwriteActualReturnDateWhenCompleted() {
         'La fecha real de devolución no debería sobrescribirse.'
     );
 }
+
+@IsTest
+static void testCalculateTotalCostOnInsert() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        WHERE VRT_SEL_VehicleType__c = 'Coche'
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 1),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 4)
+    );
+
+    // ========= ACT =========
+
+    insert rental;
+
+    // ========= ASSERT =========
+
+    VRT_Rental__c insertedRental = [
+        SELECT VRT_DIV_TotalCost__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        240,
+        insertedRental.VRT_DIV_TotalCost__c,
+        'El coste total debería calcularse automáticamente al insertar el alquiler.'
+    );
+    }
+
+    @IsTest
+static void testRecalculateTotalCostOnUpdate() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        WHERE VRT_SEL_VehicleType__c = 'Coche'
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 1),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 4)
+    );
+
+    insert rental;
+
+    // ========= ACT =========
+
+    rental.VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 6);
+
+    update rental;
+
+    // ========= ASSERT =========
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_DIV_TotalCost__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        400,
+        updatedRental.VRT_DIV_TotalCost__c,
+        'El coste total debería recalcularse automáticamente al actualizar el alquiler.'
+    );
+}
+
+@IsTest
+static void testRecalculateTotalCostWithLatePenaltyOnCompleted() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id, VRT_SEL_VehicleType__c
+        FROM VRT_Vehicle__c
+        WHERE VRT_SEL_VehicleType__c = 'Coche'
+        LIMIT 1
+    ];
+
+    Date startDate = Date.today().addDays(-5);
+    Date finalDate = Date.today().addDays(-2);
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = startDate,
+        VRT_DAT_FinalDate__c = finalDate
+    );
+
+    insert rental;
+
+    // ========= ACT =========
+
+    rental.VRT_SEL_Status__c = 'Completado';
+
+    update rental;
+
+    // ========= ASSERT =========
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_DIV_TotalCost__c,
+               VRT_DAT_ActualReturnDate__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    String season =
+        VRT_CLS_PricingService.calculateSeason(Date.today());
+
+    Decimal dailyPrice;
+
+    if (season == 'Alta') {
+        dailyPrice = 80;
+    } else if (season == 'Media') {
+        dailyPrice = 60;
+    } else {
+        dailyPrice = 40;
+    }
+
+    Decimal expectedPrice =
+        (3 * dailyPrice) +
+        (2 * dailyPrice * 1.25);
+
+    System.assertEquals(
+        Date.today(),
+        updatedRental.VRT_DAT_ActualReturnDate__c,
+        'La fecha real de devolución debería haberse rellenado.'
+    );
+
+    System.assertEquals(
+        expectedPrice,
+        updatedRental.VRT_DIV_TotalCost__c,
+        'El coste total debería incluir la penalización por retraso.'
+    );
+}
+
 }

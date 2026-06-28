@@ -7,6 +7,7 @@ public with sharing class VRT_TRG_RentalHandler {
         VRT_TRG_RentalHandlerHelper.updateVehicleRentalCompleted(oldMap, newMap);
     }
     public static void onBeforeInsert(List<VRT_Rental__c> newRentals) {
+        VRT_CLS_RentalService.calculateRentalPrices(newRentals);
     }
 
     public static void onBeforeUpdate(
@@ -16,6 +17,9 @@ public with sharing class VRT_TRG_RentalHandler {
         VRT_TRG_RentalHandlerHelper.setActualReturnDateWhenCompleted(
         oldMap,
         newMap
+    );
+        VRT_CLS_RentalService.calculateRentalPrices(
+        new List<VRT_Rental__c>(newMap.values())
     );
     }
 }
