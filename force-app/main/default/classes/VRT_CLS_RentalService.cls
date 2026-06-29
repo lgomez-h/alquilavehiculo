@@ -65,4 +65,74 @@ public with sharing class VRT_CLS_RentalService {
             );
     }
     }
+
+    public static void validateVehicleAvailability(
+    List<VRT_Rental__c> rentals,
+    Map<Id, VRT_Rental__c> oldMap
+    ) {
+    Set<Id> vehicleIds = new Set<Id>();
+
+    for (VRT_Rental__c rental : rentals) {
+        if (
+            rental.VRT_LKP_Vehicle__c != null &&
+            rental.VRT_DAT_InitialDate__c != null &&
+            rental.VRT_DAT_FinalDate__c != null &&
+            (
+                rental.VRT_SEL_Status__c == 'Reservado' ||
+                rental.VRT_SEL_Status__c == 'En curso'
+            )
+        ) {
+            vehicleIds.add(rental.VRT_LKP_Vehicle__c);
+        }
+    }
+
+    if (vehicleIds.isEmpty()) {
+        return;
+    }
+
+    List<VRT_Rental__c> existingRentals = [
+        SELECT Id,
+               VRT_LKP_Vehicle__c,
+               VRT_DAT_InitialDate__c,
+               VRT_DAT_FinalDate__c,
+               VRT_SEL_Status__c
+        FROM VRT_Rental__c
+        WHERE VRT_LKP_Vehicle__c IN :vehicleIds
+        AND VRT_SEL_Status__c IN ('Reservado', 'En curso')
+    ];
+
+    for (VRT_Rental__c rental : rentals) {
+        if (
+            rental.VRT_LKP_Vehicle__c == null ||
+            rental.VRT_DAT_InitialDate__c == null ||
+            rental.VRT_DAT_FinalDate__c == null ||
+            (
+                rental.VRT_SEL_Status__c != 'Reservado' &&
+                rental.VRT_SEL_Status__c != 'En curso'
+            )
+        ) {
+            continue;
+        }
+
+        for (VRT_Rental__c existingRental : existingRentals) {
+            if (oldMap != null && existingRental.Id == rental.Id) {
+                continue;
+            }
+
+            if (existingRental.VRT_LKP_Vehicle__c != rental.VRT_LKP_Vehicle__c) {
+                continue;
+            }
+
+            Boolean datesOverlap =
+                rental.VRT_DAT_InitialDate__c <= existingRental.VRT_DAT_FinalDate__c &&
+                rental.VRT_DAT_FinalDate__c >= existingRental.VRT_DAT_InitialDate__c;
+
+            if (datesOverlap) {
+                rental.addError(
+                    'El vehículo no está disponible para las fechas seleccionadas.'
+                );
+            }
+        }
+    }
+}
 }   

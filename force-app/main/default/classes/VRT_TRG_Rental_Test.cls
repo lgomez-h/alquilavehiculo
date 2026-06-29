@@ -475,4 +475,173 @@ static void testRecalculateTotalCostWithLatePenaltyOnCompleted() {
     );
 }
 
+@IsTest
+static void testInsertRentalWithoutOverlap() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c firstRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026,7,10),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026,7,15)
+    );
+
+    insert firstRental;
+
+    // ========= ACT =========
+
+    VRT_Rental__c secondRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026,7,20),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026,7,25)
+    );
+
+    insert secondRental;
+
+    System.assertNotEquals(
+    null,
+    secondRental.Id,
+    'El alquiler debería haberse insertado correctamente.'
+);
+
+}
+
+@IsTest
+static void testInsertRentalWithOverlap() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c firstRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 10),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 15)
+    );
+
+    insert firstRental;
+
+    VRT_Rental__c secondRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 12),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 18)
+    );
+
+    // ========= ACT =========
+
+   Boolean hasError = false;
+
+try {
+    insert secondRental;
+} catch (DmlException e) {
+    hasError = true;
+
+    System.assert(
+        e.getMessage().contains('El vehículo no está disponible'),
+        'El error debería indicar que el vehículo no está disponible.'
+    );
+}
+
+    System.assertEquals(
+    true,
+    hasError,
+    'El alquiler debería producir un error por solape.'
+    );
+}
+
+@IsTest
+static void testInsertRentalStartingSameDayAsExisting() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c firstRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 10),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 15)
+    );
+
+    insert firstRental;
+
+    VRT_Rental__c secondRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 15),
+        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 20)
+    );
+
+    // ========= ACT =========
+
+    Boolean hasError = false;
+
+    try {
+        insert secondRental;
+    } catch (DmlException e) {
+        hasError = true;
+
+        System.assert(
+            e.getMessage().contains('El vehículo no está disponible'),
+            'El error debería indicar que el vehículo no está disponible.'
+        );
+    }
+
+    // ========= ASSERT =========
+
+    System.assertEquals(
+        true,
+        hasError,
+        'El alquiler debería fallar porque empieza el mismo día que termina otro.'
+    );
+}
+
 }
