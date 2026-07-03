@@ -433,6 +433,7 @@ static void testRecalculateTotalCostWithLatePenaltyOnCompleted() {
     // ========= ACT =========
 
     rental.VRT_SEL_Status__c = 'Completado';
+    rental.VRT_DAT_ActualReturnDate__c = Date.today();
 
     update rental;
 
@@ -445,8 +446,30 @@ static void testRecalculateTotalCostWithLatePenaltyOnCompleted() {
         WHERE Id = :rental.Id
     ];
 
-    String season =
-        VRT_CLS_PricingService.calculateSeason(Date.today());
+Decimal expectedPrice = 0;
+
+// Días normales: desde startDate hasta antes de finalDate
+Date currentDate = startDate;
+
+while (currentDate < finalDate) {
+    String season = VRT_CLS_PricingService.calculateSeason(currentDate);
+
+    if (season == 'Alta') {
+        expectedPrice += 80;
+    } else if (season == 'Media') {
+        expectedPrice += 60;
+    } else {
+        expectedPrice += 40;
+    }
+
+    currentDate = currentDate.addDays(1);
+}
+
+// Días de retraso: desde el día siguiente a finalDate hasta ActualReturnDate
+currentDate = finalDate.addDays(1);
+
+while (currentDate <= Date.today()) {
+    String season = VRT_CLS_PricingService.calculateSeason(currentDate);
 
     Decimal dailyPrice;
 
@@ -458,9 +481,10 @@ static void testRecalculateTotalCostWithLatePenaltyOnCompleted() {
         dailyPrice = 40;
     }
 
-    Decimal expectedPrice =
-        (3 * dailyPrice) +
-        (2 * dailyPrice * 1.25);
+    expectedPrice += dailyPrice + (dailyPrice * 0.25);
+
+    currentDate = currentDate.addDays(1);
+}
 
     System.assertEquals(
         Date.today(),
