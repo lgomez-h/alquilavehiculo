@@ -28,9 +28,17 @@ public with sharing class VRT_CLS_InvoiceService {
         }
 
         List<VRT_Invoice__c> invoicesToInsert = new List<VRT_Invoice__c>();
+        List<VRT_ProcessLog__c> logsToInsert = new List<VRT_ProcessLog__c>();
 
         for (VRT_Rental__c rental : rentals) {
-            if (alreadyInvoicedRentalIds.contains(rental.Id)) {
+           if (alreadyInvoicedRentalIds.contains(rental.Id)) {
+                logsToInsert.add(new VRT_ProcessLog__c(
+                VRT_LKP_Rental__c = rental.Id,
+                Status__c = 'Duplicate',
+                VRT_Message__c = 'Invoice already exists. No duplicate invoice was created.',
+                VRT_Execution_Date__c = System.now()
+                ));
+
                 continue;
             }
 
@@ -41,10 +49,44 @@ public with sharing class VRT_CLS_InvoiceService {
                 VRT_DAT_IssueDate__c = Date.today(),
                 VRT_SEL_Status__c = 'Emitida'
             ));
+
+            logsToInsert.add(new VRT_ProcessLog__c(
+                VRT_LKP_Rental__c = rental.Id,
+                Status__c = 'Success',
+                VRT_Message__c = 'Invoice created successfully.',
+                VRT_Execution_Date__c = System.now()
+            ));
         }
+
+    try {
 
         if (!invoicesToInsert.isEmpty()) {
             insert invoicesToInsert;
+        }
+
+        if (!logsToInsert.isEmpty()) {
+            insert logsToInsert;
+        }
+    
+    } catch (Exception e) {
+
+    List<VRT_ProcessLog__c> errorLogs = new List<VRT_ProcessLog__c>();
+
+    for (VRT_Rental__c rental : rentals) {
+            
+            errorLogs.add(new VRT_ProcessLog__c(
+            VRT_LKP_Rental__c = rental.Id,
+            Status__c = 'Error',
+            VRT_Message__c = e.getMessage(),
+            VRT_Execution_Date__c = System.now()
+            ));
+        }
+
+        if (!errorLogs.isEmpty()) {
+            insert errorLogs;
+        }
+
+        throw e;
         }
     }
 }
