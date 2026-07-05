@@ -1,5 +1,6 @@
 public with sharing class VRT_CLS_VehicleSearchService {
 
+    @AuraEnabled(cacheable=false)
     public static List<VRT_Vehicle__c> searchVehicles(String searchText) {
         if (String.isBlank(searchText)) {
             return new List<VRT_Vehicle__c>();
