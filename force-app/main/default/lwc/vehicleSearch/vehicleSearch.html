@@ -1,3 +1,46 @@
 <template>
-    
+    <lightning-card title="Fleet Search" icon-name="standard:search">
+        <div class="slds-p-around_medium">
+            <lightning-input
+                label="Search vehicle"
+                value={searchText}
+                onchange={handleSearchTextChange}
+                onkeydown={handleKeyDown}>
+                placeholder="Search by plate, brand or model">
+            </lightning-input>
+
+            <div class="slds-m-top_small">
+                <lightning-button
+                    label="Search"
+                    variant="brand"
+                    onclick={handleSearch}>
+                </lightning-button>
+            </div>
+
+            <template if:true={isLoading}>
+                    <lightning-spinner
+                        alternative-text="Loading vehicles..."
+                        size="medium">
+                    </lightning-spinner>
+            </template>
+
+            <template if:true={hasSearched}>
+                <template if:false={vehicles.length}>
+                    <div class="slds-m-top_medium slds-text-align_center">
+                         No vehicles found.
+                    </div>
+                </template>
+            </template>
+
+            <template if:true={vehicles.length}>
+                <div class="slds-m-top_medium">
+                    <lightning-datatable
+                        key-field="Id"
+                        data={vehicles}
+                        columns={columns}>
+                </lightning-datatable>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
 </template>
