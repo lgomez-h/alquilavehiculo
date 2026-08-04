@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/banner.png" alt="AlquilaVehículo Banner" width="100%">
+</p>
+
 # AlquilaVehículo
 
 **Salesforce DX Project | Apex | Lightning Web Components | Platform Developer I**
