@@ -92,15 +92,9 @@ public with sharing class VRT_CLS_PricingService {
 
     public static Decimal applyLoyaltyDiscount(
         Decimal basePrice,
-        Id accountId
+        Integer completedRentals
     ) {
-
-        Integer completedRentals =
-            VRT_CLS_RentalService.countCompletedRentalsLast12Months(
-                accountId
-         );
-
-        if (completedRentals >= LOYALTY_RENTALS) {
+         if (completedRentals >= LOYALTY_RENTALS) {
             return basePrice - (basePrice * LOYALTY_DISCOUNT);
         }
 
@@ -155,7 +149,7 @@ public with sharing class VRT_CLS_PricingService {
     String vehicleType,
     Date startDate,
     Date expectedReturnDate,
-    Id accountId,
+    Integer completedRentals,
     Date actualReturnDate
     ) {
     Decimal finalPrice =
@@ -168,7 +162,7 @@ public with sharing class VRT_CLS_PricingService {
     finalPrice =
         applyLoyaltyDiscount(
             finalPrice,
-            accountId
+            completedRentals
         );
 
     finalPrice =

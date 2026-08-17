@@ -16,54 +16,86 @@ public with sharing class VRT_CLS_RentalService {
 
     }
 
-    public static void calculateRentalPrices(
-    List<VRT_Rental__c> rentals
-    ) {
-    Set<Id> vehicleIds = new Set<Id>();
+    public static void calculateRentalPrices(List<VRT_Rental__c> rentals)
+    {
+        Set<Id> vehicleIds = new Set<Id>();
+        Set<Id> accountsIds = new Set<id>();
 
-    for (VRT_Rental__c rental : rentals) {
-        if (rental.VRT_LKP_Vehicle__c != null) {
-            vehicleIds.add(rental.VRT_LKP_Vehicle__c);
+        for (VRT_Rental__c rental : rentals) {
+            if (rental.VRT_LKP_Vehicle__c != null) {
+                vehicleIds.add(rental.VRT_LKP_Vehicle__c);
+            }
+            if (rental.VRT_LKP_Account__c != null) {
+                accountsIds.add(rental.VRT_LKP_Account__c);
+            }
         }
-    }
-
-    if (vehicleIds.isEmpty()) {
-        return;
-    }
-
-    Map<Id, VRT_Vehicle__c> vehiclesById =
-        new Map<Id, VRT_Vehicle__c>([
-            SELECT Id, VRT_SEL_VehicleType__c
-            FROM VRT_Vehicle__c
-            WHERE Id IN :vehicleIds
-        ]);
-
-    for (VRT_Rental__c rental : rentals) {
-        if (
-            rental.VRT_LKP_Vehicle__c == null ||
-            rental.VRT_LKP_Account__c == null ||
-            rental.VRT_DAT_InitialDate__c == null ||
-            rental.VRT_DAT_FinalDate__c == null
-        ) {
-            continue;
+    
+        if (vehicleIds.isEmpty()) {
+            return;
         }
 
-        VRT_Vehicle__c vehicle =
-            vehiclesById.get(rental.VRT_LKP_Vehicle__c);
 
-        if (vehicle == null) {
-            continue;
+        Map<Id, VRT_Vehicle__c> vehiclesById =
+            new Map<Id, VRT_Vehicle__c>([
+                SELECT Id, VRT_SEL_VehicleType__c
+                FROM VRT_Vehicle__c
+                WHERE Id IN :vehicleIds
+            ]);
+        
+        Map<Id, Integer> completedRentalsByAccountId = 
+            new Map<Id, Integer>();
+
+        if (!accountsIds.isEmpty()) {
+            for (AggregateResult ar : [
+                SELECT
+                    VRT_LKP_Account__c accountId,
+                    COUNT(Id) completedCount
+                FROM VRT_Rental__c
+                WHERE VRT_LKP_Account__c IN :accountsIds
+                    AND VRT_SEL_Status__c = 'Completado'
+                    AND VRT_DAT_FinalDate__c >= :Date.today().addMonths(-12)
+                GROUP BY VRT_LKP_Account__c
+            ]) {
+                completedRentalsByAccountId.put(
+                    (Id) ar.get('accountId'),
+                    (Integer) ar.get('completedCount')
+                );
+            }
         }
 
-        rental.VRT_DIV_TotalCost__c =
-            VRT_CLS_PricingService.calculateFinalPrice(
-                vehicle.VRT_SEL_VehicleType__c,
-                rental.VRT_DAT_InitialDate__c,
-                rental.VRT_DAT_FinalDate__c,
-                rental.VRT_LKP_Account__c,
-                rental.VRT_DAT_ActualReturnDate__c
-            );
-    }
+        for (VRT_Rental__c rental : rentals) {
+            if (
+                rental.VRT_LKP_Vehicle__c == null ||
+                rental.VRT_LKP_Account__c == null ||
+                rental.VRT_DAT_InitialDate__c == null ||
+                rental.VRT_DAT_FinalDate__c == null
+            ) {
+                continue;
+            }
+
+            VRT_Vehicle__c vehicle =
+                vehiclesById.get(rental.VRT_LKP_Vehicle__c);
+
+            if (vehicle == null) {
+                continue;
+            }
+
+            Integer completedRentals =
+                completedRentalsByAccountId.get(rental.VRT_LKP_Account__c);
+
+            if (completedRentals == null) {
+                completedRentals = 0;
+            }
+
+            rental.VRT_DIV_TotalCost__c =
+                VRT_CLS_PricingService.calculateFinalPrice(
+                    vehicle.VRT_SEL_VehicleType__c,
+                    rental.VRT_DAT_InitialDate__c,
+                    rental.VRT_DAT_FinalDate__c,
+                    completedRentals,
+                    rental.VRT_DAT_ActualReturnDate__c
+                );
+        }
     }
 
     public static void validateVehicleAvailability(
