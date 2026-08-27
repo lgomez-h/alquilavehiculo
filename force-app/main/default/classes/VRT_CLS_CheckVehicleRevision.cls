@@ -1,4 +1,4 @@
-public with sharing class VRT_CLS_CheckVehicleRevision implements Database.Batchable<SObject> {
+public without sharing class VRT_CLS_CheckVehicleRevision implements Database.Batchable<SObject> {
 
     // Método que inicia el batch
     public Database.QueryLocator start(Database.BatchableContext BC) {

@@ -2,6 +2,13 @@ public with sharing class VRT_CLS_VehicleSearchService {
 
     @AuraEnabled(cacheable=false)
     public static List<VRT_Vehicle__c> searchVehicles(String searchText) {
+
+        if (!Schema.sObjectType.VRT_Vehicle__c.isAccessible()) {
+        throw new SecurityException(
+            'No tienes permisos para consultar vehículos.'
+        );
+        }
+        
         if (String.isBlank(searchText)) {
             return new List<VRT_Vehicle__c>();
         }
@@ -21,6 +28,12 @@ public with sharing class VRT_CLS_VehicleSearchService {
             )
         ];
 
-        return (List<VRT_Vehicle__c>) searchResults[0];
+        SObjectAccessDecision accessDecision =
+            Security.stripInaccessible(
+                AccessType.READABLE,
+                searchResults[0]
+            );
+
+        return (List<VRT_Vehicle__c>) accessDecision.getRecords();
     }
 }

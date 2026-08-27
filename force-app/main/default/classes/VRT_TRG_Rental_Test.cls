@@ -175,6 +175,70 @@ public with sharing class VRT_TRG_Rental_Test {
         System.assertEquals('Deplorable', updated.VRT_SEL_Condition__c);
     }
 
+    @IsTest
+    static void testUpdateConditionVehicleBulkSameVehicle() {
+
+        // ========= ARRANGE =========
+
+        VRT_Vehicle__c vehicle = getVehicleByUsage(0);
+
+        Date day1 = Date.today().addDays(30);
+        Date day2 = Date.today().addDays(31);
+        Date day3 = Date.today().addDays(32);
+        Date day4 = Date.today().addDays(33);
+
+        List<VRT_Rental__c> rentals = new List<VRT_Rental__c>{
+            buildValidPaidRental(
+                vehicle.Id,
+                'Reservado',
+                day1,
+                day2
+            ),
+            buildValidPaidRental(
+                vehicle.Id,
+                'Reservado',
+                day2,
+                day3
+            ),
+            buildValidPaidRental(
+                vehicle.Id,
+                'Reservado',
+                day3,
+                day4
+            )
+        };
+
+        // ========= ACT =========
+
+        Test.startTest();
+
+        insert rentals;
+
+        Test.stopTest();
+
+        // ========= ASSERT =========
+
+        VRT_Vehicle__c updatedVehicle = [
+            SELECT
+                VRT_NUM_Usage__c,
+                VRT_SEL_Condition__c
+            FROM VRT_Vehicle__c
+            WHERE Id = :vehicle.Id
+        ];
+
+        System.assertEquals(
+            3,
+            Integer.valueOf(updatedVehicle.VRT_NUM_Usage__c),
+            'Tres alquileres insertados en la misma operación deben sumar tres usos.'
+        );
+
+        System.assertEquals(
+            'Recién fabricado',
+            updatedVehicle.VRT_SEL_Condition__c,
+            'Con tres usos el vehículo debe seguir en condición Recién fabricado.'
+        );
+    }
+
     // -----------------------
     // TEST: kilometraje (after update)
     // -----------------------
@@ -629,8 +693,8 @@ static void testInsertRentalStartingSameDayAsExisting() {
         VRT_LKP_Vehicle__c = vehicle.Id,
         VRT_SEL_Status__c = 'Reservado',
         VRT_SEL_PaymentStatus__c = 'Pagado',
-        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 10),
-        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 15)
+        VRT_DAT_InitialDate__c = Date.today().addDays(1),
+        VRT_DAT_FinalDate__c = Date.today().addDays(6)
     );
 
     insert firstRental;
@@ -640,31 +704,371 @@ static void testInsertRentalStartingSameDayAsExisting() {
         VRT_LKP_Vehicle__c = vehicle.Id,
         VRT_SEL_Status__c = 'Reservado',
         VRT_SEL_PaymentStatus__c = 'Pagado',
-        VRT_DAT_InitialDate__c = Date.newInstance(2026, 7, 15),
-        VRT_DAT_FinalDate__c = Date.newInstance(2026, 7, 20)
+        VRT_DAT_InitialDate__c = Date.today().addDays(6),
+        VRT_DAT_FinalDate__c = Date.today().addDays(11)
     );
 
     // ========= ACT =========
 
+    insert secondRental;
+
+    // ========= ASSERT =========
+
+    System.assertNotEquals(
+        null,
+        secondRental.Id,
+        'El alquiler debe poder empezar el mismo día que termina el anterior.'
+    );
+}
+
+// -----------------------
+// TESTS: transiciones de estado
+// -----------------------
+
+@IsTest
+static void testStatusTransitionReservadoToEnCursoAllowed() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(40),
+        VRT_DAT_FinalDate__c = Date.today().addDays(42)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'En curso';
+
+    Test.startTest();
+    update rental;
+    Test.stopTest();
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_SEL_Status__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        'En curso',
+        updatedRental.VRT_SEL_Status__c,
+        'Reservado debe poder pasar a En curso.'
+    );
+}
+
+
+@IsTest
+static void testStatusTransitionReservadoToCanceladoAllowed() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(43),
+        VRT_DAT_FinalDate__c = Date.today().addDays(45)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'Cancelado';
+
+    Test.startTest();
+    update rental;
+    Test.stopTest();
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_SEL_Status__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        'Cancelado',
+        updatedRental.VRT_SEL_Status__c,
+        'Reservado debe poder pasar a Cancelado.'
+    );
+}
+
+
+@IsTest
+static void testStatusTransitionEnCursoToCompletadoAllowed() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today(),
+        VRT_DAT_FinalDate__c = Date.today().addDays(2)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'Completado';
+
+    Test.startTest();
+    update rental;
+    Test.stopTest();
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_SEL_Status__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        'Completado',
+        updatedRental.VRT_SEL_Status__c,
+        'En curso debe poder pasar a Completado.'
+    );
+}
+
+
+@IsTest
+static void testStatusTransitionEnCursoToCanceladoAllowed() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today(),
+        VRT_DAT_FinalDate__c = Date.today().addDays(2)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'Cancelado';
+
+    Test.startTest();
+    update rental;
+    Test.stopTest();
+
+    VRT_Rental__c updatedRental = [
+        SELECT VRT_SEL_Status__c
+        FROM VRT_Rental__c
+        WHERE Id = :rental.Id
+    ];
+
+    System.assertEquals(
+        'Cancelado',
+        updatedRental.VRT_SEL_Status__c,
+        'En curso debe poder pasar a Cancelado.'
+    );
+}
+
+
+@IsTest
+static void testStatusTransitionReservadoToCompletadoBlocked() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(50),
+        VRT_DAT_FinalDate__c = Date.today().addDays(52)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'Completado';
+
     Boolean hasError = false;
 
+    Test.startTest();
+
     try {
-        insert secondRental;
+        update rental;
     } catch (DmlException e) {
         hasError = true;
 
         System.assert(
-            e.getMessage().contains('El vehículo no está disponible'),
-            'El error debería indicar que el vehículo no está disponible.'
+            e.getMessage().contains(
+                'Un alquiler reservado solo puede pasar a En curso o Cancelado.'
+            ),
+            'Debe informar de que Reservado no puede pasar directamente a Completado.'
         );
     }
 
-    // ========= ASSERT =========
+    Test.stopTest();
 
     System.assertEquals(
         true,
         hasError,
-        'El alquiler debería fallar porque empieza el mismo día que termina otro.'
+        'Reservado → Completado debe estar bloqueado.'
+    );
+}
+
+
+@IsTest
+static void testStatusTransitionCompletadoToEnCursoBlocked() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today(),
+        VRT_DAT_FinalDate__c = Date.today().addDays(1)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'Completado';
+    update rental;
+
+    rental.VRT_SEL_Status__c = 'En curso';
+
+    Boolean hasError = false;
+
+    Test.startTest();
+
+    try {
+        update rental;
+    } catch (DmlException e) {
+        hasError = true;
+
+        System.assert(
+            e.getMessage().contains(
+                'Un alquiler completado no puede cambiar de estado.'
+            ),
+            'Debe impedir cambiar el estado de un alquiler completado.'
+        );
+    }
+
+    Test.stopTest();
+
+    System.assertEquals(
+        true,
+        hasError,
+        'Completado debe ser un estado final.'
+    );
+}
+
+
+@IsTest
+static void testStatusTransitionCanceladoToReservadoBlocked() {
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = [
+        SELECT Id
+        FROM VRT_Vehicle__c
+        LIMIT 1
+    ];
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(55),
+        VRT_DAT_FinalDate__c = Date.today().addDays(57)
+    );
+    insert rental;
+
+    rental.VRT_SEL_Status__c = 'Cancelado';
+    update rental;
+
+    rental.VRT_SEL_Status__c = 'Reservado';
+
+    Boolean hasError = false;
+
+    Test.startTest();
+
+    try {
+        update rental;
+    } catch (DmlException e) {
+        hasError = true;
+
+        System.assert(
+            e.getMessage().contains(
+                'Un alquiler cancelado no puede cambiar de estado.'
+            ),
+            'Debe impedir reabrir un alquiler cancelado.'
+        );
+    }
+
+    Test.stopTest();
+
+    System.assertEquals(
+        true,
+        hasError,
+        'Cancelado debe ser un estado final.'
     );
 }
 

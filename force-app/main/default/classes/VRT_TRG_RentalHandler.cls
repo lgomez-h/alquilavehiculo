@@ -9,21 +9,21 @@ public with sharing class VRT_TRG_RentalHandler {
     ) {
     VRT_TRG_RentalHandlerHelper.updateVehicleRentalCompleted(oldMap, newMap);
 
-    List<VRT_Rental__c> rentalsToInvoice = new List<VRT_Rental__c>();
+    Set<Id> rentalIdsToInvoice = new Set<Id>();
 
     for (VRT_Rental__c rental : newMap.values()) {
         VRT_Rental__c oldRental = oldMap.get(rental.Id);
 
         if (
-            rental.VRT_SEL_Status__c == 'Completado' &&
-            oldRental.VRT_SEL_Status__c != 'Completado'
+            oldRental.VRT_SEL_Status__c == 'En curso' &&
+            rental.VRT_SEL_Status__c == 'Completado'
         ) {
-            rentalsToInvoice.add(rental);
+            rentalIdsToInvoice.add(rental.Id);
         }
     }
 
-    if (!rentalsToInvoice.isEmpty()) {
-        System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalsToInvoice));
+    if (!rentalIdsToInvoice.isEmpty()) {
+        System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalIdsToInvoice));
     }
     }
     public static void onBeforeInsert(List<VRT_Rental__c> newRentals) {
@@ -39,6 +39,10 @@ public with sharing class VRT_TRG_RentalHandler {
         Map<Id,VRT_Rental__c> oldMap,
         Map<Id,VRT_Rental__c> newMap) 
     {
+        VRT_CLS_RentalService.validateStatusTransition(
+        oldMap,
+        newMap
+        );
         VRT_TRG_RentalHandlerHelper.setActualReturnDateWhenCompleted(
         oldMap,
         newMap

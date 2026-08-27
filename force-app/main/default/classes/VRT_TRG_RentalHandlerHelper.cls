@@ -1,42 +1,81 @@
-public with sharing class VRT_TRG_RentalHandlerHelper {
+public without sharing class VRT_TRG_RentalHandlerHelper {
 
     // PROCESO 1 (after insert):
     // - Sumar +1 al nº de usos del vehículo relacionado
     // - Recalcular la condición del vehículo
-    public static void updateConditionVehicle(List<VRT_Rental__c> newRentals) {
+    public static void updateConditionVehicle(
+        List<VRT_Rental__c> newRentals
+    ) {
 
-        // 1) Reunimos todos los IDs de vehículo de los alquileres (bulk)
-        Set<Id> vehicleIds = new Set<Id>();
-        for (VRT_Rental__c r : newRentals) {
-            if (r.VRT_LKP_Vehicle__c != null) {
-                vehicleIds.add(r.VRT_LKP_Vehicle__c);
+        // 1) Contamos cuántos alquileres nuevos tiene cada vehículo.
+        Map<Id, Integer> rentalsCountByVehicleId =
+            new Map<Id, Integer>();
+
+        for (VRT_Rental__c rental : newRentals) {
+
+            if (rental.VRT_LKP_Vehicle__c == null) {
+                continue;
             }
-        }
-        if (vehicleIds.isEmpty()) return;
 
-        // 2) SOQL: Traemos todos los vehículos en 1 consulta
-        Map<Id, VRT_Vehicle__c> vehiclesById = new Map<Id, VRT_Vehicle__c>([
-            SELECT Id, VRT_NUM_Usage__c, VRT_SEL_Condition__c
-            FROM VRT_Vehicle__c
-            WHERE Id IN :vehicleIds
-            FOR UPDATE
-        ]);
+            Id vehicleId = rental.VRT_LKP_Vehicle__c;
 
-        // 3) Modificamos los vehículos en memoria
-        List<VRT_Vehicle__c> vehiclesToUpdate = new List<VRT_Vehicle__c>();
-        for (Id vid : vehiclesById.keySet()) {
-            VRT_Vehicle__c v = vehiclesById.get(vid);
+            Integer currentCount =
+                rentalsCountByVehicleId.containsKey(vehicleId)
+                    ? rentalsCountByVehicleId.get(vehicleId)
+                    : 0;
 
-            Integer usage = (v.VRT_NUM_Usage__c == null) ? 0 : Integer.valueOf(v.VRT_NUM_Usage__c);
-            usage = usage + 1;
-
-            v.VRT_NUM_Usage__c = usage;
-            v.VRT_SEL_Condition__c = calculateCondition(usage);
-
-            vehiclesToUpdate.add(v);
+            rentalsCountByVehicleId.put(
+                vehicleId,
+                currentCount + 1
+            );
         }
 
-        // 4) DML: Guardamos con 1 solo update
+        if (rentalsCountByVehicleId.isEmpty()) {
+            return;
+        }
+
+        // 2) Recuperamos todos los vehículos afectados en una sola consulta.
+        Map<Id, VRT_Vehicle__c> vehiclesById =
+            new Map<Id, VRT_Vehicle__c>([
+                SELECT
+                    Id,
+                    VRT_NUM_Usage__c,
+                    VRT_SEL_Condition__c
+                FROM VRT_Vehicle__c
+                WHERE Id IN :rentalsCountByVehicleId.keySet()
+                FOR UPDATE
+            ]);
+
+        // 3) Sumamos a Usage el número real de alquileres
+        // nuevos que ha recibido cada vehículo.
+        List<VRT_Vehicle__c> vehiclesToUpdate =
+            new List<VRT_Vehicle__c>();
+
+        for (Id vehicleId : vehiclesById.keySet()) {
+
+            VRT_Vehicle__c vehicle =
+                vehiclesById.get(vehicleId);
+
+            Integer usage =
+                vehicle.VRT_NUM_Usage__c == null
+                    ? 0
+                    : Integer.valueOf(
+                        vehicle.VRT_NUM_Usage__c
+                    );
+
+            Integer newRentalsCount =
+                rentalsCountByVehicleId.get(vehicleId);
+
+            usage = usage + newRentalsCount;
+
+            vehicle.VRT_NUM_Usage__c = usage;
+            vehicle.VRT_SEL_Condition__c =
+                calculateCondition(usage);
+
+            vehiclesToUpdate.add(vehicle);
+        }
+
+        // 4) Un único DML para todos los vehículos.
         if (!vehiclesToUpdate.isEmpty()) {
             update vehiclesToUpdate;
         }

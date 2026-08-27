@@ -7,7 +7,12 @@ que mientras que el
 alquiler esté pendiente de 
 pago, éste no podrá 
 iniciarse.</description>
-    <errorConditionFormula>NOT(ISPICKVAL(VRT_SEL_PaymentStatus__c, &quot;Pagado&quot;))</errorConditionFormula>
+    <errorConditionFormula>AND(
+    ISPICKVAL(VRT_SEL_Status__c, &quot;En curso&quot;),
+    NOT(
+        ISPICKVAL(VRT_SEL_PaymentStatus__c, &quot;Pagado&quot;)
+    )
+)</errorConditionFormula>
     <errorMessage>Mientras el alquiler 
 esté pendiente de pago 
 no se puede iniciar.</errorMessage>
