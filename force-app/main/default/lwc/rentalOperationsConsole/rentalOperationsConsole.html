@@ -1,0 +1,149 @@
+<template>
+    <lightning-card title="Consola Operativa de Alquileres">
+
+        <div class="slds-p-horizontal_small slds-p-bottom_small">
+            <lightning-button
+                label="Nuevo alquiler"
+                variant="brand"
+                onclick={handleNewRental}>
+            </lightning-button>
+        </div>
+
+    <template if:true={showNewRentalForm}>
+        <div class="slds-box slds-m-top_small slds-m-horizontal_small">
+            <h3 class="slds-text-heading_small slds-m-bottom_small">
+                Nuevo alquiler
+            </h3>
+
+            <lightning-input
+            type="date"
+            label="Fecha inicio"
+            value={startDate}
+            onchange={handleStartDateChange}>
+            </lightning-input>
+
+            <lightning-input
+                type="date"
+                label="Fecha fin"
+                value={endDate}
+                onchange={handleEndDateChange}
+                disabled={isEndDateDisabled}>
+            </lightning-input>
+            
+            <template lwc:if={dateError}>
+                <p class="slds-text-color_error slds-m-top_x-small">
+                    {dateError}
+                </p>
+            </template>
+            
+            <lightning-combobox
+                name="vehicle"
+                label="Vehículo"
+                value={selectedVehicleId}
+                options={vehicleOptions}
+                onchange={handleVehicleChange}>
+            </lightning-combobox>
+
+            <template lwc:if={noAvailableVehicles}>
+                <p class="slds-text-color_error slds-m-top_x-small">
+                    No hay vehículos disponibles para las fechas seleccionadas.
+                </p>
+            </template>
+
+            <div class="slds-m-top_small">
+                <lightning-button
+                    label="Simular precio"
+                    variant="brand"
+                    onclick={handleSimulatePrice}
+                    disabled={areRentalActionsDisabled}>
+                </lightning-button>
+
+                <lightning-button
+                    label="Cancelar"
+                    variant="neutral"
+                    onclick={handleCancelRental}>
+                </lightning-button>
+                
+                <lightning-button
+                    label="Guardar alquiler"
+                    variant="brand"
+                    onclick={handleCreateRental}
+                    disabled={areRentalActionsDisabled}>
+                </lightning-button>
+            </div>
+
+            <template if:true={simulatedPrice}>
+                <p class="slds-m-top_small">
+                    Coste estimado:
+                    <lightning-formatted-number
+                        value={simulatedPrice}
+                        format-style="currency"
+                        currency-code="EUR">
+                    </lightning-formatted-number>
+                </p>
+            </template>
+         </div>
+    </template>
+        
+    <div class="slds-grid slds-wrap slds-gutters slds-p-horizontal_small">
+
+        <div class="slds-col slds-size_1-of-3">
+            <lightning-combobox
+                label="Estado"
+                value={filters.status}
+                options={statusOptions}
+                onchange={handleStatusFilter}>
+            </lightning-combobox>
+        </div>
+
+        <div class="slds-col slds-size_1-of-3">
+            <lightning-combobox
+                label="Marca"
+                value={filters.brand}
+                options={brandOptions}
+                onchange={handleBrandFilter}>
+            </lightning-combobox>
+        </div>
+
+        <div class="slds-col slds-size_1-of-3">
+            <lightning-input
+                type="search"
+                label="Matrícula"
+                value={filters.licensePlate}
+                onchange={handleLicensePlateFilter}>
+            </lightning-input>
+        </div>
+        
+    </div>
+
+    <div class="slds-p-horizontal_small slds-p-top_small">
+        <lightning-button
+            label="Limpiar filtros"
+            onclick={handleClearFilters}>
+        </lightning-button>
+    </div>
+
+        
+        <template if:true={rentals}>
+            <p class="slds-p-horizontal_small">
+                Alquileres activos encontrados: {rentals.length}
+            </p>
+            <lightning-datatable
+                key-field="Id"
+                data={rentals}
+                columns={columns}
+                onsort={handleSort}
+                sorted-by={sortedBy}
+                sorted-direction={sortDirection}
+                hide-checkbox-column>
+            </lightning-datatable> 
+        </template>
+
+        <template if:true={rentalsError}>
+            <p class="slds-p-horizontal_small">
+                Se ha producido un error al cargar los alquileres.
+            </p>
+        </template>
+
+    </lightning-card>
+</template>

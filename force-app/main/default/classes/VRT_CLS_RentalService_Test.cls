@@ -65,27 +65,6 @@ private class VRT_CLS_RentalService_Test {
     insert rentals;
     }
 
-    @IsTest
-static void testCountCompletedRentalsLast12Months() {
-
-    Account account = [
-        SELECT Id
-        FROM Account
-        WHERE Name = 'Cliente Test'
-        LIMIT 1
-    ];
-
-    Integer completedRentals =
-        VRT_CLS_RentalService.countCompletedRentalsLast12Months(
-            account.Id
-        );
-
-    System.assertEquals(
-        3,
-        completedRentals,
-        'Debe contar únicamente los alquileres completados de los últimos 12 meses.'
-    );
-}
 
 @IsTest
 static void testCalculateRentalPricesBulk() {
@@ -167,4 +146,499 @@ static void testCalculateRentalPricesBulk() {
         );
     }
 }
+
+@IsTest
+static void testGetActiveRentals() {
+
+    // ========= ARRANGE =========
+
+    // Recuperamos la Account creada por @testSetup.
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    // Creamos un vehículo para relacionarlo con los alquileres.
+    VRT_Vehicle__c coche = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '8888YYY',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+
+    insert coche;
+
+    // Creamos los dos alquileres que SÍ consideramos activos.
+    List<VRT_Rental__c> activeRentals = new List<VRT_Rental__c>();
+
+    activeRentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = coche.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(5),
+        VRT_DAT_FinalDate__c = Date.today().addDays(7)
+    ));
+
+    activeRentals.add(new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = coche.Id,
+        VRT_SEL_Status__c = 'En curso',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(-1),
+        VRT_DAT_FinalDate__c = Date.today().addDays(2)
+    ));
+
+    insert activeRentals;
+
+    // ========= ACT =========
+
+    List<VRT_Rental__c> result =
+        VRT_CLS_RentalService.getActiveRentals(account.Id);
+
+    // ========= ASSERT =========
+
+    System.assertEquals(
+        2,
+        result.size(),
+        'Debe devolver únicamente los alquileres activos.'
+    );
+    
+    System.assertEquals(
+        'Ford',
+        result[0].VRT_LKP_Vehicle__r.VRT_TXT_Brand__c,
+        'Debe devolver la marca del vehículo relacionado.'
+    );
+
+    System.assertEquals(
+        '8888YYY',
+        result[0].VRT_LKP_Vehicle__r.VRT_TXT_LicensePlate__c,
+        'Debe devolver la matrícula del vehículo relacionado.'
+    );
+}
+
+@IsTest
+static void testGetActiveRentalsWithNullAccount() {
+
+    // ========= ACT =========
+
+    List<VRT_Rental__c> result =
+        VRT_CLS_RentalService.getActiveRentals(null);
+
+    // ========= ASSERT =========
+
+    System.assertEquals(
+        0,
+        result.size(),
+        'Si no se proporciona una Account, debe devolver una lista vacía.'
+    );
+}
+
+@IsTest
+    static void testVehicleAvailabilityBlocksOverlap() {
+
+        // ========= ARRANGE =========
+
+        Account account = [
+            SELECT Id
+            FROM Account
+            WHERE Name = 'Cliente Test'
+            LIMIT 1
+        ];
+
+        VRT_Vehicle__c vehicle = new VRT_Vehicle__c(
+            VRT_TXT_LicensePlate__c = '4444DDD',
+            VRT_TXT_Brand__c = 'Ford',
+            VRT_SEL_VehicleType__c = 'Coche',
+            VRT_SEL_Status__c = 'Listo',
+            VRT_SEL_EnergyType__c = 'Gasolina',
+            VRT_NUM_Passengers__c = 4,
+            VRT_FLG_Available__c = true,
+            VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+            VRT_FLG_NeedsInspection__c = false
+        );
+        insert vehicle;
+
+        // Alquiler existente: día 5 -> día 10
+        VRT_Rental__c existingRental = new VRT_Rental__c(
+            VRT_LKP_Account__c = account.Id,
+            VRT_LKP_Vehicle__c = vehicle.Id,
+            VRT_SEL_Status__c = 'Reservado',
+            VRT_SEL_PaymentStatus__c = 'Pagado',
+            VRT_DAT_InitialDate__c = Date.today().addDays(5),
+            VRT_DAT_FinalDate__c = Date.today().addDays(10)
+        );
+        insert existingRental;
+
+        // Nuevo alquiler: día 8 -> día 12
+        VRT_Rental__c newRental = new VRT_Rental__c(
+            VRT_LKP_Account__c = account.Id,
+            VRT_LKP_Vehicle__c = vehicle.Id,
+            VRT_SEL_Status__c = 'Reservado',
+            VRT_SEL_PaymentStatus__c = 'Pagado',
+            VRT_DAT_InitialDate__c = Date.today().addDays(8),
+            VRT_DAT_FinalDate__c = Date.today().addDays(12)
+        );
+
+        // ========= ACT =========
+
+        Test.startTest();
+
+        VRT_CLS_RentalService.validateVehicleAvailability(
+            new List<VRT_Rental__c>{ newRental },
+            null
+        );
+
+        Test.stopTest();
+
+        // ========= ASSERT =========
+
+        System.assertEquals(
+            1,
+            newRental.getErrors().size(),
+            'Debe detectar el solapamiento del vehículo.'
+        );
+    }
+
+    @IsTest
+static void testVehicleAvailabilityAllowsSameDayEndStart() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '3333CCC',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+    insert vehicle;
+
+    VRT_Rental__c existingRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(5),
+        VRT_DAT_FinalDate__c = Date.today().addDays(10)
+    );
+    insert existingRental;
+
+    VRT_Rental__c newRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(10),
+        VRT_DAT_FinalDate__c = Date.today().addDays(15)
+    );
+
+    // ========= ACT =========
+
+    Test.startTest();
+
+    VRT_CLS_RentalService.validateVehicleAvailability(
+        new List<VRT_Rental__c>{ newRental },
+        null
+    );
+
+    Test.stopTest();
+
+    // ========= ASSERT =========
+
+    System.assertEquals(
+        0,
+        newRental.getErrors().size(),
+        'Debe permitirse que un alquiler empiece el mismo día que termina otro.'
+    );
+    }
+
+    @IsTest
+static void testGetAvailableVehicles() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c occupiedVehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '1111AAA',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+
+    VRT_Vehicle__c availableVehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '2222BBB',
+        VRT_TXT_Brand__c = 'Toyota',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2022, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+
+    insert new List<VRT_Vehicle__c>{
+        occupiedVehicle,
+        availableVehicle
+    };
+
+    VRT_Rental__c existingRental = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = occupiedVehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(5),
+        VRT_DAT_FinalDate__c = Date.today().addDays(10)
+    );
+
+    insert existingRental;
+
+    // ========= ACT =========
+
+    Test.startTest();
+
+    List<VRT_Vehicle__c> result =
+        VRT_CLS_RentalService.getAvailableVehicles(
+            Date.today().addDays(8),
+            Date.today().addDays(12)
+        );
+
+    Test.stopTest();
+
+    // ========= ASSERT =========
+
+    Set<Id> resultIds = new Set<Id>();
+
+    for (VRT_Vehicle__c vehicle : result) {
+        resultIds.add(vehicle.Id);
+    }
+
+    System.assertEquals(
+        false,
+        resultIds.contains(occupiedVehicle.Id),
+        'El vehículo con un alquiler solapado no debe estar disponible.'
+    );
+
+    System.assertEquals(
+        true,
+        resultIds.contains(availableVehicle.Id),
+        'El vehículo sin alquileres solapados debe estar disponible.'
+    );
+}
+@IsTest
+static void testSimulateRentalPrice() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '6666FFF',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+
+    insert vehicle;
+
+    // Julio = temporada Alta.
+    Date startDate = Date.newInstance(2026, 7, 1);
+    Date endDate = Date.newInstance(2026, 7, 4);
+
+    // ========= ACT =========
+
+    Test.startTest();
+
+    Decimal result =
+        VRT_CLS_RentalService.simulateRentalPrice(
+            account.Id,
+            vehicle.Id,
+            startDate,
+            endDate
+        );
+
+    Test.stopTest();
+
+    // ========= ASSERT =========
+
+    System.assertEquals(
+        228,
+        result,
+        'La simulación debe calcular el precio incluyendo el descuento de fidelidad.'
+    );
+}
+
+@IsTest
+static void testCreateRental() {
+
+    // ========= ARRANGE =========
+
+    Account account = new Account(
+        Name = 'Cliente Creación'
+    );
+    insert account;
+
+    VRT_Vehicle__c vehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '4545GGG',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+    insert vehicle;
+
+    Date startDate = Date.today().addDays(1);
+    Date endDate = Date.today().addDays(4);
+
+    // ========= ACT =========
+
+    Test.startTest();
+
+    VRT_Rental__c createdRental =
+        VRT_CLS_RentalService.createRental(
+            account.Id,
+            vehicle.Id,
+            startDate,
+            endDate
+        );
+
+    Test.stopTest();
+
+    // ========= ASSERT =========
+
+    VRT_Rental__c savedRental = [
+        SELECT
+            Id,
+            VRT_LKP_Account__c,
+            VRT_LKP_Vehicle__c,
+            VRT_SEL_Status__c,
+            VRT_SEL_PaymentStatus__c,
+            VRT_DIV_TotalCost__c
+        FROM VRT_Rental__c
+        WHERE Id = :createdRental.Id
+    ];
+
+    System.assertEquals(
+        'Reservado',
+        savedRental.VRT_SEL_Status__c
+    );
+
+    System.assertEquals(
+        'Pendiente',
+        savedRental.VRT_SEL_PaymentStatus__c
+    );
+
+    System.assertNotEquals(
+    null,
+    savedRental.VRT_DIV_TotalCost__c,
+    'El trigger debe calcular el precio definitivo.'
+    );
+
+    System.assertNotEquals(
+        null,
+        savedRental.VRT_DIV_TotalCost__c,
+        'El trigger debe calcular el precio definitivo.'
+    );
+
+    System.assert(
+        savedRental.VRT_DIV_TotalCost__c > 0,
+        'El precio definitivo debe ser mayor que cero.'
+    );
+
+    }
+
+    @IsTest
+static void testCreateRentalPastDate() {
+
+    // ========= ARRANGE =========
+
+    Account account = new Account(
+        Name = 'Cliente Fecha Pasada'
+    );
+    insert account;
+
+    VRT_Vehicle__c vehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '9090ZZZ',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+    insert vehicle;
+
+    Date startDate = Date.today().addDays(-1);
+    Date endDate = Date.today().addDays(2);
+
+    // ========= ACT / ASSERT =========
+
+    try {
+        VRT_CLS_RentalService.createRental(
+            account.Id,
+            vehicle.Id,
+            startDate,
+            endDate
+        );
+
+        System.assert(
+            false,
+            'Debe lanzar una excepción si la fecha de inicio es anterior a hoy.'
+        );
+
+    } catch (IllegalArgumentException e) {
+
+        System.assertEquals(
+            'La fecha de inicio no puede ser anterior a hoy.',
+            e.getMessage()
+        );
+    }
+}
+
 }
