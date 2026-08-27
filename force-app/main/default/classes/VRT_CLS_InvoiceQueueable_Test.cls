@@ -107,16 +107,8 @@ private class VRT_CLS_InvoiceQueueable_Test {
 
         Test.stopTest();
 
-        VRT_Rental__c completedRental = [
-            SELECT Id,
-                   VRT_LKP_Account__c,
-                   VRT_DIV_TotalCost__c
-            FROM VRT_Rental__c
-            WHERE Id = :rental.Id
-        ];
-
         VRT_CLS_InvoiceService.createInvoices(
-            new List<VRT_Rental__c>{ completedRental }
+            new Set<Id>{ rental.Id }
         );
 
         Integer invoiceCount = [

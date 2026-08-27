@@ -1,12 +1,16 @@
 public with sharing class VRT_CLS_InvoiceQueueable implements Queueable {
 
-    private List<VRT_Rental__c> rentals;
+    private Set<Id> rentalIds;
 
-    public VRT_CLS_InvoiceQueueable(List<VRT_Rental__c> rentals) {
-        this.rentals = rentals;
+    public VRT_CLS_InvoiceQueueable(Set<Id> rentalIds) {
+        this.rentalIds = rentalIds;
     }
-
     public void execute(QueueableContext context) {
-        VRT_CLS_InvoiceService.createInvoices(rentals);
+        
+        System.attachFinalizer(
+            new VRT_CLS_InvoiceFinalizer(rentalIds)
+        );
+
+        VRT_CLS_InvoiceService.createInvoices(rentalIds);
     }
 }

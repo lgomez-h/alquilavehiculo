@@ -1,19 +1,8 @@
-public with sharing class VRT_CLS_InvoiceService {
+public without sharing class VRT_CLS_InvoiceService {
 
-    public static void createInvoices(List<VRT_Rental__c> rentals) {
-        if (rentals == null || rentals.isEmpty()) {
-            return;
-        }
+    public static void createInvoices(Set<Id> rentalIds) {
 
-        Set<Id> rentalIds = new Set<Id>();
-
-        for (VRT_Rental__c rental : rentals) {
-            if (rental.Id != null) {
-                rentalIds.add(rental.Id);
-            }
-        }
-
-        if (rentalIds.isEmpty()) {
+        if (rentalIds == null || rentalIds.isEmpty()) {
             return;
         }
 
@@ -41,7 +30,7 @@ public with sharing class VRT_CLS_InvoiceService {
         List<VRT_ProcessLog__c> logsToInsert = new List<VRT_ProcessLog__c>();
         List<VRT_InvoiceNotificationEvent__e> eventsToPublish = new List<VRT_InvoiceNotificationEvent__e>();
 
-        for (VRT_Rental__c rental : rentals) {
+        for (VRT_Rental__c rental : rentalsById.values()) {
            if (alreadyInvoicedRentalIds.contains(rental.Id)) {
                 logsToInsert.add(new VRT_ProcessLog__c(
                 VRT_LKP_Rental__c = rental.Id,
@@ -61,23 +50,21 @@ public with sharing class VRT_CLS_InvoiceService {
                 VRT_SEL_Status__c = 'Emitida'
             ));
 
-            logsToInsert.add(new VRT_ProcessLog__c(
-                VRT_LKP_Rental__c = rental.Id,
-                Status__c = 'Success',
-                VRT_Message__c = 'Invoice created successfully.',
-                VRT_Execution_Date__c = System.now()
-            ));
+            
         }
-
-    try {
 
         if (!invoicesToInsert.isEmpty()) {
             insert invoicesToInsert;
             
             for (VRT_Invoice__c invoice : invoicesToInsert) {
 
-            VRT_Rental__c rental = rentalsById.get(invoice.VRT_LKP_Rental__c);
-
+            VRT_Rental__c rental = rentalsById.get(invoice.VRT_LKP_Rental__c);logsToInsert.add(new VRT_ProcessLog__c(
+                VRT_LKP_Rental__c = rental.Id,
+                Status__c = 'Success',
+                VRT_Message__c = 'Invoice created successfully.',
+                VRT_Execution_Date__c = System.now()
+            ));
+            
             eventsToPublish.add(
             new VRT_InvoiceNotificationEvent__e(
             VRT_RentalId__c = rental.Id,
@@ -95,26 +82,6 @@ public with sharing class VRT_CLS_InvoiceService {
         if (!logsToInsert.isEmpty()) {
             insert logsToInsert;
         }
-    
-    } catch (Exception e) {
-
-    List<VRT_ProcessLog__c> errorLogs = new List<VRT_ProcessLog__c>();
-
-    for (VRT_Rental__c rental : rentals) {
-            
-            errorLogs.add(new VRT_ProcessLog__c(
-            VRT_LKP_Rental__c = rental.Id,
-            Status__c = 'Error',
-            VRT_Message__c = e.getMessage(),
-            VRT_Execution_Date__c = System.now()
-            ));
-        }
-
-        if (!errorLogs.isEmpty()) {
-            insert errorLogs;
-        }
-
-        throw e;
-        }
     }
 }
+

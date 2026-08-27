@@ -3,7 +3,7 @@
     <fullName>VRT_DAT_IssueDate__c</fullName>
     <description>fecha de emision de la factura</description>
     <label>Fecha de Emision</label>
-    <required>false</required>
+    <required>true</required>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Date</type>
