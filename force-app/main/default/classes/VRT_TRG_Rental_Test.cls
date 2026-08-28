@@ -57,7 +57,7 @@ public with sharing class VRT_TRG_Rental_Test {
                 VRT_TXT_LicensePlate__c = '5678EFG',
                 VRT_TXT_Brand__c = 'Yamaha',
                 VRT_SEL_VehicleType__c = 'Moto',
-                VRT_SEL_Status__c = 'En mantenimiento',
+                VRT_SEL_Status__c = 'Listo',
                 VRT_SEL_EnergyType__c = 'Gasolina',
                 VRT_NUM_Passengers__c = 2,
                 VRT_FLG_Available__c = true,
