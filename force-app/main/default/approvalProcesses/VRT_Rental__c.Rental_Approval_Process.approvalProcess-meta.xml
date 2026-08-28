@@ -67,6 +67,10 @@
             <name>Set_Approval_Status_Approved</name>
             <type>FieldUpdate</type>
         </action>
+        <action>
+            <name>Set_Approved_Amount</name>
+            <type>FieldUpdate</type>
+        </action>
     </finalApprovalActions>
     <finalApprovalRecordLock>false</finalApprovalRecordLock>
     <finalRejectionActions>

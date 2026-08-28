@@ -402,4 +402,26 @@ public static List<VRT_Rental__c> getActiveRentals(Id accountId) {
             }
         }
     }
+
+  public static void updateApprovalStatusForAmountChange(
+    List<VRT_Rental__c> rentals
+) {
+    for (VRT_Rental__c rental : rentals) {
+
+        if (
+            rental.VRT_SEL_ApprovalStatus__c == 'Approved' &&
+            rental.VRT_DIV_TotalCost__c != null
+        ) {
+            if (rental.VRT_DIV_TotalCost__c <= 3000) {
+                rental.VRT_SEL_ApprovalStatus__c = 'Not Required';
+            }
+            else if (
+                rental.Approved_Amount__c != null &&
+                rental.VRT_DIV_TotalCost__c > rental.Approved_Amount__c
+            ) {
+                rental.VRT_SEL_ApprovalStatus__c = 'Not Required';
+            }
+        }
+    }
+}
 }

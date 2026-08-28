@@ -7,24 +7,30 @@ public with sharing class VRT_TRG_RentalHandler {
     Map<Id, VRT_Rental__c> oldMap,
     Map<Id, VRT_Rental__c> newMap
     ) {
-    VRT_TRG_RentalHandlerHelper.updateVehicleRentalCompleted(oldMap, newMap);
 
-    Set<Id> rentalIdsToInvoice = new Set<Id>();
+        VRT_CLS_ApprovalService.updateRejectionReasons(
+            oldMap,
+            newMap
+        );
+        
+        VRT_TRG_RentalHandlerHelper.updateVehicleRentalCompleted(oldMap, newMap);
 
-    for (VRT_Rental__c rental : newMap.values()) {
-        VRT_Rental__c oldRental = oldMap.get(rental.Id);
+        Set<Id> rentalIdsToInvoice = new Set<Id>();
 
-        if (
-            oldRental.VRT_SEL_Status__c == 'En curso' &&
-            rental.VRT_SEL_Status__c == 'Completado'
-        ) {
-            rentalIdsToInvoice.add(rental.Id);
+        for (VRT_Rental__c rental : newMap.values()) {
+            VRT_Rental__c oldRental = oldMap.get(rental.Id);
+
+            if (
+                oldRental.VRT_SEL_Status__c == 'En curso' &&
+                rental.VRT_SEL_Status__c == 'Completado'
+            ) {
+                rentalIdsToInvoice.add(rental.Id);
+            }
         }
-    }
 
-    if (!rentalIdsToInvoice.isEmpty()) {
-        System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalIdsToInvoice));
-    }
+        if (!rentalIdsToInvoice.isEmpty()) {
+            System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalIdsToInvoice));
+        }
     }
     public static void onBeforeInsert(List<VRT_Rental__c> newRentals) {
         VRT_CLS_RentalService.validateVehicleAvailability(
@@ -54,6 +60,10 @@ public with sharing class VRT_TRG_RentalHandler {
         
         VRT_CLS_RentalService.calculateRentalPrices(
         new List<VRT_Rental__c>(newMap.values())
+        );
+
+        VRT_CLS_RentalService.updateApprovalStatusForAmountChange(
+            new List<VRT_Rental__c>(newMap.values())
         );
     }
 }

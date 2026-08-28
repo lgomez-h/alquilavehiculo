@@ -641,4 +641,71 @@ static void testCreateRentalPastDate() {
     }
 }
 
+@IsTest
+static void testInvalidateApprovalWhenAmountIncreases() {
+
+    // ARRANGE
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_SEL_ApprovalStatus__c = 'Approved',
+        Approved_Amount__c = 5000,
+        VRT_DIV_TotalCost__c = 7000
+    );
+
+    // ACT
+    VRT_CLS_RentalService.updateApprovalStatusForAmountChange(
+        new List<VRT_Rental__c>{ rental }
+    );
+
+    // ASSERT
+    System.assertEquals(
+        'Not Required',
+        rental.VRT_SEL_ApprovalStatus__c,
+        'La aprobación debe invalidarse si el coste supera el importe aprobado.'
+    );
+}
+
+
+@IsTest
+static void testKeepApprovalWhenAmountDoesNotIncrease() {
+
+    // ARRANGE
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_SEL_ApprovalStatus__c = 'Approved',
+        Approved_Amount__c = 5000,
+        VRT_DIV_TotalCost__c = 4000
+    );
+
+    // ACT
+    VRT_CLS_RentalService.updateApprovalStatusForAmountChange(
+        new List<VRT_Rental__c>{ rental }
+    );
+
+    // ASSERT
+    System.assertEquals(
+        'Approved',
+        rental.VRT_SEL_ApprovalStatus__c,
+        'La aprobación debe mantenerse si el nuevo coste no supera el importe aprobado.'
+    );
+}
+
+@IsTest
+static void testApprovalNotRequiredWhenAmountFallsBelowThreshold() {
+
+    VRT_Rental__c rental = new VRT_Rental__c(
+        VRT_SEL_ApprovalStatus__c = 'Approved',
+        Approved_Amount__c = 5000,
+        VRT_DIV_TotalCost__c = 2500
+    );
+
+    VRT_CLS_RentalService.updateApprovalStatusForAmountChange(
+        new List<VRT_Rental__c>{ rental }
+    );
+
+    System.assertEquals(
+        'Not Required',
+        rental.VRT_SEL_ApprovalStatus__c,
+        'La aprobación deja de ser necesaria cuando el coste baja a 3000 euros o menos.'
+    );
+}
+
 }
