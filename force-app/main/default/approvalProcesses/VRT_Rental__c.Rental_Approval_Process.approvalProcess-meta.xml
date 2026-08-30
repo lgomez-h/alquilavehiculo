@@ -21,8 +21,8 @@
         <allowDelegate>false</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>lgomez-h@empathetic-bear-3jzc10.com</name>
-                <type>user</type>
+                <name>VRT_Rental_Managers</name>
+                <type>queue</type>
             </approver>
             <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
@@ -34,8 +34,8 @@
         <allowDelegate>false</allowDelegate>
         <assignedApprover>
             <approver>
-                <name>lgomez-h@empathetic-bear-3jzc10.com</name>
-                <type>user</type>
+                <name>VRT_Rental_Financial_Approvers</name>
+                <type>queue</type>
             </approver>
             <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
         </assignedApprover>
