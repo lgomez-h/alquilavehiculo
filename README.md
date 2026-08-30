@@ -157,7 +157,7 @@ alquilavehiculo/
 ├── scripts/
 ├── sfdx-project.json
 └── README.md
-```text
+```
 ## Documentación
 
 La documentación técnica del proyecto se encuentra en la carpeta `docs`.
