@@ -33,8 +33,8 @@
         <aggregateTypes>Sum</aggregateTypes>
         <field>Account$AnnualRevenue</field>
     </columns>
-    <description>Informe con tabla resumen, que indica los 
-ingresos de las cuentas activas clasificadas por 
+    <description>Informe con tabla resumen, que indica los
+ingresos de las cuentas activas clasificadas por
 industria. Incluye un gráfico de donut.</description>
     <filter>
         <criteriaItems>
@@ -51,7 +51,7 @@ industria. Incluye un gráfico de donut.</description>
             <operator>greaterThan</operator>
             <value>0</value>
         </criteriaItems>
-        <language>en_US</language>
+
     </filter>
     <format>Summary</format>
     <groupingsDown>

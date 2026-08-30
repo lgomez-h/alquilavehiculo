@@ -1,6 +1,46 @@
 @IsTest
 private class VRT_CLS_RentalConsoleController_Test {
 
+    private static User createOperationalUser() {
+
+    Profile minimumProfile = [
+        SELECT Id
+        FROM Profile
+        WHERE Name = 'Minimum Access - Salesforce'
+        LIMIT 1
+    ];
+
+    String uniqueValue = String.valueOf(System.currentTimeMillis());
+
+    User testUser = new User(
+        Alias = 'vrttest',
+        Email = 'vrttest' + uniqueValue + '@example.com',
+        EmailEncodingKey = 'UTF-8',
+        LastName = 'AlquilaVehiculo Test',
+        LanguageLocaleKey = 'en_US',
+        LocaleSidKey = 'en_US',
+        ProfileId = minimumProfile.Id,
+        TimeZoneSidKey = 'Europe/Madrid',
+        Username = 'vrttest' + uniqueValue + '@example.com'
+    );
+
+    insert testUser;
+
+    PermissionSet operationalPermissionSet = [
+        SELECT Id
+        FROM PermissionSet
+        WHERE Name = 'VRT_AlquilaVehiculo_User'
+        LIMIT 1
+    ];
+
+    insert new PermissionSetAssignment(
+        AssigneeId = testUser.Id,
+        PermissionSetId = operationalPermissionSet.Id
+    );
+
+    return testUser;
+}
+
     @IsTest
     static void testGetActiveRentals() {
 
@@ -160,6 +200,10 @@ static void testSimulateRentalPrice() {
     @IsTest
 static void testCreateRental() {
 
+    User operationalUser = createOperationalUser();
+
+    System.runAs(operationalUser) {
+
     // ========= ARRANGE =========
 
     Account account = new Account(
@@ -232,5 +276,6 @@ static void testCreateRental() {
     System.assert(
         savedRental.VRT_DIV_TotalCost__c > 0
     );
+    }
     }
 }

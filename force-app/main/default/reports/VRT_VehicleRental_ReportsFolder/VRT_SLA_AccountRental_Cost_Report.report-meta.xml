@@ -20,8 +20,8 @@
         <aggregateTypes>Sum</aggregateTypes>
         <field>Account.Alquileres__r$VRT_DIV_TotalCost__c</field>
     </columns>
-    <description>Informe que muestre las cuentas de cada 
-SLA, incluyendo información de la cuenta y 
+    <description>Informe que muestre las cuentas de cada
+SLA, incluyendo información de la cuenta y
 del alquiler.</description>
     <filter>
         <criteriaItems>
@@ -31,7 +31,7 @@ del alquiler.</description>
             <operator>greaterThan</operator>
             <value>1000000</value>
         </criteriaItems>
-        <language>en_US</language>
+
     </filter>
     <format>Summary</format>
     <groupingsDown>

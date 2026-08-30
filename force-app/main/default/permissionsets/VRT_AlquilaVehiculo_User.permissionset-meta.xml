@@ -18,6 +18,7 @@
         <field>Account.VRT_TXT_Email__c</field>
         <readable>true</readable>
     </fieldPermissions>
+
     <fieldPermissions>
         <editable>false</editable>
         <field>VRT_Invoice__c.VRT_CUR_TotalAmount__c</field>
