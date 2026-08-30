@@ -4,147 +4,193 @@
 
 # AlquilaVehículo
 
-**Salesforce DX Project | Apex | Lightning Web Components | Platform Developer I**
+**Salesforce DX | Apex | Lightning Web Components | SOQL/SOSL | Automation | Async Apex**
 
-Aplicación desarrollada sobre Salesforce para la gestión del alquiler de vehículos. Este proyecto tiene como objetivo aplicar buenas prácticas de desarrollo profesional mediante la implementación de una arquitectura escalable, código mantenible y un flujo de trabajo basado en Git.
+AlquilaVehículo es una aplicación desarrollada sobre Salesforce para gestionar el alquiler de vehículos.
 
-El desarrollo se ha realizado como parte de mi proceso de aprendizaje y preparación para la certificación **Salesforce Platform Developer I**, priorizando la calidad del código, la separación de responsabilidades y las recomendaciones de Salesforce para el desarrollo sobre la plataforma.
+El proyecto comenzó con una primera versión centrada en la gestión básica de vehículos y alquileres y posteriormente evolucionó con los requisitos de Salesforce Platform Developer Track II, incorporando reglas de negocio, automatización, componentes Lightning, procesamiento asíncrono, seguridad y pruebas.
 
-> **Estado del proyecto:** En desarrollo activo. Se continúan incorporando nuevas funcionalidades y mejoras.
+El objetivo del proyecto ha sido aplicar de forma práctica los conocimientos adquiridos durante mi formación como Salesforce Platform Developer, intentando mantener una estructura clara y entender por qué se utiliza cada herramienta de la plataforma.
 
----
+## Funcionalidades principales
 
-# Tecnologías
+- Motor de precios configurable mediante Custom Metadata.
+- Cálculo automático según vehículo, temporada, duración y fidelidad.
+- Penalización por devolución con retraso.
+- Validación de disponibilidad y prevención de alquileres solapados.
+- Proceso de aprobación financiera según el importe del alquiler.
+- Consola Operativa LWC integrada en la página de Account.
+- Simulación de precio antes de crear un alquiler.
+- Facturación automática mediante Queueable Apex.
+- Prevención de facturas duplicadas y registro del proceso.
+- Notificación mediante Platform Event y Flow.
+- Buscador Global de Flota mediante SOSL.
+- Revisión periódica de vehículos mediante Batch y Scheduled Apex.
+- Permission Set específico para el usuario operativo.
 
-* Salesforce DX
-* Apex
-* Lightning Web Components (LWC)
-* SOQL / SOSL
-* Apex Triggers
-* Queueable Apex
-* Custom Metadata Types
-* Visual Studio Code
-* Git y GitHub
 
----
+## Arquitectura
 
-# Objetivos
+El proyecto intenta mantener separadas las responsabilidades entre la interfaz, la coordinación de las operaciones y la lógica de negocio.
 
-El propósito de este proyecto es desarrollar una aplicación de gestión de alquiler de vehículos aplicando prácticas utilizadas en proyectos profesionales de Salesforce.
+Para las funcionalidades iniciadas desde Lightning Web Components se utiliza principalmente:
 
-Entre los objetivos principales se encuentran:
+`LWC → Controller → Service`
 
-* Diseñar una arquitectura mantenible y escalable.
-* Aplicar principios de desarrollo orientados a buenas prácticas.
-* Implementar lógica de negocio mediante Apex.
-* Desarrollar componentes Lightning Web Components.
-* Utilizar programación asíncrona cuando el proceso lo requiera.
-* Configurar reglas de negocio mediante Custom Metadata.
-* Garantizar la calidad mediante pruebas unitarias.
-* Gestionar el desarrollo utilizando Git y Pull Requests.
+Por ejemplo, la Consola Operativa sigue este recorrido:
 
----
+`rentalOperationsConsole → VRT_CLS_RentalConsoleController → VRT_CLS_RentalService`
 
-# Arquitectura
+Para las automatizaciones relacionadas con los alquileres se utiliza:
 
-El proyecto sigue una arquitectura basada en la separación de responsabilidades.
+`Trigger → Handler → Service`
 
-* Trigger → Punto de entrada de la lógica.
-* Trigger Handler → Gestión de eventos del Trigger.
-* Service Layer → Implementación de la lógica de negocio.
-* Custom Metadata → Configuración desacoplada del código.
-* Queueable Apex → Procesamiento asíncrono.
-* Apex Tests → Validación automática del comportamiento de la aplicación.
+El trigger detecta el contexto de ejecución, el Handler coordina las acciones necesarias y los Services contienen la lógica de negocio reutilizable.
 
-Este enfoque facilita el mantenimiento del código, mejora la reutilización de componentes y favorece la escalabilidad de la solución.
+El Buscador Global utiliza una estructura más sencilla:
 
----
+`vehicleSearch → VRT_CLS_VehicleSearchService`
 
-# Funcionalidades
+En este caso no se añadió un Controller intermedio porque no aportaba una responsabilidad adicional.
 
-Actualmente el proyecto incluye funcionalidades relacionadas con la gestión del alquiler de vehículos.
+Los procesos posteriores o periódicos utilizan las herramientas asíncronas adecuadas según su finalidad:
 
-Entre ellas se encuentran:
+- Queueable Apex para la facturación.
+- Finalizer para registrar fallos del proceso asíncrono.
+- Platform Event y Flow para desacoplar la notificación.
+- Batch Apex para procesar grupos de vehículos.
+- Scheduled Apex para programar la revisión periódica.
 
-* Gestión de vehículos.
-* Gestión de alquileres.
-* Validaciones de negocio mediante Apex.
-* Cálculo automático de precios.
-* Motor de precios configurable mediante Custom Metadata.
-* Generación de facturas.
-* Procesamiento asíncrono mediante Queueable Apex.
-* Registro de procesos.
-* Pruebas unitarias.
+La arquitectura completa y las decisiones tomadas están explicadas en [Arquitectura](docs/architecture.md).
 
-El proyecto continúa evolucionando con nuevas funcionalidades y mejoras.
+## Tecnologías utilizadas
 
----
+- Salesforce Platform
+- Salesforce DX
+- Apex
+- Lightning Web Components (LWC)
+- SOQL
+- SOSL
+- Apex Triggers
+- Approval Process
+- Flow
+- Queueable Apex
+- Apex Finalizer
+- Batch Apex
+- Scheduled Apex
+- Platform Events
+- Custom Metadata Types
+- Salesforce Security y Permission Sets
+- Apex Testing
+- Salesforce CLI
+- Git y GitHub
+## Testing y calidad
 
-# Estado del desarrollo
+Las principales reglas de negocio disponen de tests Apex, incluyendo escenarios individuales y procesamiento de varios registros.
 
-El desarrollo sigue un flujo de trabajo basado en ramas de características (Feature Branches) y Pull Requests antes de integrar los cambios en la rama principal.
+Durante el desarrollo se han aplicado prácticas como:
 
-Las próximas mejoras incluyen:
+- uso de `List`, `Set` y `Map` para trabajar con colecciones;
+- consultas SOQL fuera de bucles;
+- procesamiento bulk en triggers y Services;
+- separación entre Trigger, Handler y lógica de negocio;
+- tests sobre Pricing Engine, disponibilidad, control financiero, Consola Operativa, facturación y búsqueda;
+- pruebas de procesos asíncronos mediante `Test.startTest()` y `Test.stopTest()`.
 
-* Ampliación de funcionalidades.
-* Documentación técnica completa.
-* Diagramas de arquitectura.
-* Capturas de la aplicación.
-* Mejoras en la cobertura de pruebas.
-* Optimización y refactorización del código.
+Antes de preparar la entrega se realizó una validación completa mediante:
 
----
+`sf project deploy start --source-dir force-app --dry-run --test-level RunLocalTests --wait 30`
 
-# Buenas prácticas aplicadas
+Resultado:
 
-Durante el desarrollo se han aplicado, entre otras, las siguientes prácticas:
+- 73 tests ejecutados.
+- 73 tests superados.
+- 0 tests fallidos.
 
-* Arquitectura por capas.
-* Separación de responsabilidades.
-* Código bulkificado.
-* Uso eficiente de colecciones (List, Set y Map).
-* Minimización de consultas SOQL y operaciones DML.
-* Programación asíncrona.
-* Configuración desacoplada mediante Custom Metadata.
-* Pruebas unitarias.
-* Control de versiones con Git y GitHub.
+La estrategia de pruebas se explica con más detalle en [Testing](docs/testing.md).
 
----
+## Seguridad
 
-# Estructura del proyecto
+El proyecto incluye el Permission Set:
+
+`VRT_AlquilaVehiculo_User`
+
+Su objetivo es proporcionar al usuario operativo los permisos necesarios sin recurrir de forma general a `View All` o `Modify All`.
+
+La configuración diferencia entre:
+
+- acceso a la aplicación;
+- acceso a clases Apex utilizadas desde LWC;
+- permisos sobre objetos;
+- permisos de lectura y edición sobre campos;
+- acceso a registros mediante el modelo de sharing de Salesforce.
+
+Los campos calculados o gestionados automáticamente por la aplicación se mantienen como solo lectura cuando el usuario no necesita modificarlos directamente.
+
+Los puntos de entrada utilizados por los LWC aplican además controles desde Apex, incluyendo `with sharing` y comprobaciones de acceso cuando corresponde.
+
+La estrategia se explica en [Seguridad](docs/security.md).
+
+## Estructura del repositorio
 
 ```text
-force-app/
- └── main/
-      └── default/
-           ├── classes/
-           ├── lwc/
-           ├── objects/
-           ├── triggers/
-           ├── customMetadata/
-           └── ...
-```
+alquilavehiculo/
+├── force-app/
+│   └── main/
+│       └── default/
+│           ├── classes/
+│           ├── customMetadata/
+│           ├── flows/
+│           ├── lwc/
+│           ├── objects/
+│           ├── permissionsets/
+│           ├── triggers/
+│           └── ...
+├── docs/
+│   ├── images/
+│   ├── architecture.md
+│   ├── deployment.md
+│   ├── security.md
+│   ├── testing.md
+│   └── track-ii.md
+├── manifest/
+├── scripts/
+├── sfdx-project.json
+└── README.md
+```text
+## Documentación
 
----
+La documentación técnica del proyecto se encuentra en la carpeta `docs`.
 
-# Documentación
+- [Arquitectura](docs/architecture.md) — estructura de la aplicación y decisiones de diseño.
+- [Implementación Track II](docs/track-ii.md) — relación entre los requisitos de Track II y la solución implementada.
+- [Seguridad](docs/security.md) — Permission Set, permisos de objetos y campos y controles desde Apex.
+- [Testing](docs/testing.md) — estrategia de pruebas, bulk testing y validación final.
+- [Despliegue](docs/deployment.md) — pasos para desplegar el proyecto y configuración posterior necesaria.
 
-La documentación técnica del proyecto se irá incorporando progresivamente en la carpeta `docs`, incluyendo:
+## Despliegue
 
-* Arquitectura.
-* Decisiones de diseño.
-* Casos de uso.
-* Diagramas.
-* Guías de despliegue.
-* Evolución del proyecto.
+El proyecto utiliza Salesforce DX y puede desplegarse desde `force-app`.
 
----
+Antes de realizar un despliegue definitivo se recomienda ejecutar una validación:
 
-# Autor
+`sf project deploy start --source-dir force-app --dry-run --test-level RunLocalTests --wait 30`
+
+Después del despliegue existen configuraciones propias de la org que deben revisarse, como la asignación del Permission Set, la programación de Scheduled Apex, los usuarios participantes en las aprobaciones y la configuración de email.
+
+El proceso completo se explica en [Despliegue](docs/deployment.md).
+
+## Estado del proyecto
+
+Las funcionalidades principales definidas para Track II están implementadas y la versión actual ha superado la validación completa de despliegue con 73 tests locales ejecutados y 0 fallos.
+
+El proyecto puede seguir evolucionando. Entre las posibles mejoras futuras se encuentran un control más avanzado de concurrencia, mayor monitorización de procesos asíncronos y automatización del proceso de integración y despliegue.
+
+## Autor
 
 **Luis Javier Gómez Hernández**
 
-Salesforce Platform Developer I
+Salesforce Platform Developer I Certified
 
 GitHub: https://github.com/lgomez-h
 
