@@ -226,4 +226,16 @@
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
+    <tabSettings>
+        <tab>Crear_Alquiler</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>VRT_Rental__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>VRT_Vehicle__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
 </PermissionSet>
