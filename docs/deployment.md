@@ -88,4 +88,4 @@ Después del despliegue se recomienda comprobar:
 
 El flujo completo queda resumido en:
 
-`Git → autenticar org → validar → desplegar → asignar permisos → verificar`
+`Git → autenticar org → validar → desplegar → asignar permisos → verificar`git status
