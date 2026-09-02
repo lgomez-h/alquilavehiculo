@@ -33,7 +33,7 @@ Ejemplo:
 
 Antes del despliegue definitivo se recomienda realizar una validación:
 
-`sf project deploy start --source-dir force-app --dry-run --test-level RunLocalTests --wait 30`
+`sf project deploy start --source-dir force-app --target-org <alias-org> --dry-run --test-level RunLocalTests --wait 30`
 
 En la validación final del proyecto se ejecutaron 73 tests Apex:
 
@@ -42,7 +42,7 @@ En la validación final del proyecto se ejecutaron 73 tests Apex:
 
 Después puede realizarse el despliegue:
 
-`sf project deploy start --source-dir force-app --test-level RunLocalTests --wait 30`
+`sf project deploy start --source-dir force-app --target-org <alias-org> --test-level RunLocalTests --wait 30`
 
 ## 5. Asignar permisos
 
