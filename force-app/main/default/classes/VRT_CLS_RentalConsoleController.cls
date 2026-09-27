@@ -1,3 +1,4 @@
+// Clase que implementa la lógica del controlador para el componente de consola de alquileres.
 public with sharing class VRT_CLS_RentalConsoleController {
 
     @AuraEnabled(cacheable=true)

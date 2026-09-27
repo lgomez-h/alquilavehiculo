@@ -1,3 +1,7 @@
+// PUNTO DE ENTRADA DE LA LÓGICA DE RENTAL
+// El Trigger detecta insert/update y delega en el Handler.
+// Decisión: Trigger ligero; la lógica de negocio está fuera.
+
 trigger VRT_TRG_Rental on VRT_Rental__c (
     before insert,
     before update,

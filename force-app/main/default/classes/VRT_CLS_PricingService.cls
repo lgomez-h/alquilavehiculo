@@ -9,10 +9,11 @@ public with sharing class VRT_CLS_PricingService {
         String vehicleType,
         String season
     ) {
+        // Cargar las reglas de precios si aún no se han cargado
         if (pricingRules == null) {
             loadPricingRules();
         }
-
+        // si ya esta cargado, busco la regla de precios en el mapa
         String key = buildKey(vehicleType, season);
 
         return pricingRules.get(key);
@@ -20,26 +21,28 @@ public with sharing class VRT_CLS_PricingService {
 
     private static void loadPricingRules() {
         pricingRules = new Map<String, VRT_PricingRule__mdt>();
-
+        // Cargo todas las reglas activas de precios en el mapa
         for (VRT_PricingRule__mdt rule : VRT_PricingRule__mdt.getAll().values()) {
             if (rule.VRT_FLG_Active__c) {
+                // Construyo una buildkey por cada regla
                 String key = buildKey(
                     rule.VRT_TXT_VehicleType__c,
                     rule.VRT_TXT_Season__c
                 );
-
+                // Coloco en el map la clave y la regla de precios
                 pricingRules.put(key, rule);
             }
         }
     }
 
+    // Construye una clave a partir del tipo de vehículo y la temporada
     private static String buildKey(
         String vehicleType,
         String season
     ) {
         return vehicleType + '_' + season;
     }
-
+    // Calcula la temporada según el mes de la fecha de alquiler
     public static String calculateSeason(Date rentalDate) {
         Integer monthNumber = rentalDate.month();
        if (monthNumber == 1 ||
@@ -57,7 +60,7 @@ public with sharing class VRT_CLS_PricingService {
             return 'Baja';
         }
     }
-
+    // calcula el precio base del alquiler
     public static Decimal calculateBasePrice(
     String vehicleType,
     Date startDate,
@@ -65,10 +68,10 @@ public with sharing class VRT_CLS_PricingService {
     ) {
         Date currentDate = startDate;
         Decimal totalPrice = 0;
-
         while (currentDate < endDate) {
+            // Calcular la temporada para la fecha actual
             String season = calculateSeason(currentDate);
-
+            //busco la tarifa en mdt
             VRT_PricingRule__mdt rule =
                 getPricingRule(vehicleType, season);
 
@@ -81,7 +84,7 @@ public with sharing class VRT_CLS_PricingService {
                     '".'
                     );
             }
-
+            // Sumo el precio por día de la regla al total
             totalPrice += rule.VRT_NUM_PricePerDay__c;
 
             currentDate = currentDate.addDays(1);
@@ -89,7 +92,7 @@ public with sharing class VRT_CLS_PricingService {
 
     return totalPrice;
 }
-
+    // Aplica un descuento por fidelidad si corresponde
     public static Decimal applyLoyaltyDiscount(
         Decimal basePrice,
         Integer completedRentals
@@ -100,7 +103,7 @@ public with sharing class VRT_CLS_PricingService {
 
         return basePrice;
     }
-
+    // Aplica una penalización por devolución tardía si corresponde
     public static Decimal applyLatePenalty(
     Decimal currentPrice,
     String vehicleType,
@@ -115,7 +118,7 @@ public with sharing class VRT_CLS_PricingService {
     }
 
     Decimal finalPrice = currentPrice;
-
+    // Calcular la penalización por cada día de retraso
     Date currentDate = expectedReturnDate.addDays(1);
 
     while (currentDate <= actualReturnDate) {
@@ -135,7 +138,7 @@ public with sharing class VRT_CLS_PricingService {
         }
 
         Decimal dailyPrice = rule.VRT_NUM_PricePerDay__c;
-
+        // Aplico un recargo del 25% por cada día de retraso
         finalPrice += dailyPrice;
         finalPrice += dailyPrice * 0.25;
 
@@ -145,6 +148,8 @@ public with sharing class VRT_CLS_PricingService {
     return finalPrice;
     }
 
+    //calcula el precio final del alquiler
+
     public static Decimal calculateFinalPrice(
     String vehicleType,
     Date startDate,
@@ -152,21 +157,22 @@ public with sharing class VRT_CLS_PricingService {
     Integer completedRentals,
     Date actualReturnDate
     ) {
+    // Calcular el precio base del alquiler
     Decimal finalPrice =
         calculateBasePrice(
             vehicleType,
             startDate,
             expectedReturnDate
         );
-
+    // Aplicar el descuento por fidelidad si corresponde
     finalPrice =
         applyLoyaltyDiscount(
             finalPrice,
             completedRentals
         );
-
+    // Aplicar la penalización por devolución tardía si correspondefinal
     finalPrice =
-        applyLatePenalty(
+        applyLatePenalty(                                                                           
             finalPrice,
             vehicleType,
             expectedReturnDate,
@@ -175,8 +181,4 @@ public with sharing class VRT_CLS_PricingService {
 
     return finalPrice;
     }
-
-  
-
-    
 }

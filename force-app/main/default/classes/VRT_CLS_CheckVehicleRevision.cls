@@ -10,7 +10,7 @@ public without sharing class VRT_CLS_CheckVehicleRevision implements Database.Ba
         ]);
     }
 
-    // Ejecuta la lógica procesando grupos de vehículos (puedes imaginar que es como un for sobre muchos coches)
+    // Ejecuta la lógica procesando grupos de vehículos 
     public void execute(Database.BatchableContext BC, List<VRT_Vehicle__c> vehicles) {
         Integer thisYear = Date.today().year();
 

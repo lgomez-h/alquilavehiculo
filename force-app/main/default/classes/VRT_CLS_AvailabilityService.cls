@@ -1,5 +1,5 @@
 public without sharing class VRT_CLS_AvailabilityService {
-
+    // Busca vehículos no disponibles para un rango de fechas
     public static Set<Id> getUnavailableVehicleIds(
         Date startDate,
         Date endDate

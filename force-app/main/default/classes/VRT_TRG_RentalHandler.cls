@@ -1,8 +1,14 @@
+// Recibe los Rentals del Trigger y decide qué servicios ejecutar.
+// Separo orquestación de lógica de negocio.
+
 public with sharing class VRT_TRG_RentalHandler {
     
+    //En after actuo despues de guardar
+
     public static void onAfterInsert(List<VRT_Rental__c> newRentals) {
         VRT_TRG_RentalHandlerHelper.updateConditionVehicle(newRentals);
     }        
+    
     public static void onAfterUpdate(
     Map<Id, VRT_Rental__c> oldMap,
     Map<Id, VRT_Rental__c> newMap
@@ -14,7 +20,7 @@ public with sharing class VRT_TRG_RentalHandler {
         );
         
         VRT_TRG_RentalHandlerHelper.updateVehicleRentalCompleted(oldMap, newMap);
-
+        // Enqueue job para crear facturas para los alquileres completados
         Set<Id> rentalIdsToInvoice = new Set<Id>();
 
         for (VRT_Rental__c rental : newMap.values()) {
@@ -32,6 +38,9 @@ public with sharing class VRT_TRG_RentalHandler {
             System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalIdsToInvoice));
         }
     }
+
+    // En Before compruebo antes de guardar
+
     public static void onBeforeInsert(List<VRT_Rental__c> newRentals) {
         VRT_CLS_RentalService.validateVehicleAvailability(
             newRentals,

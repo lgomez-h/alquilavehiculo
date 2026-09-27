@@ -163,7 +163,7 @@ public without sharing class VRT_TRG_RentalHandlerHelper {
         Boolean changedToCompleted =
             oldR.VRT_SEL_Status__c != 'Completado' &&
             newR.VRT_SEL_Status__c == 'Completado';
-
+        // Compruebo si la fecha de devolución real está vacía
         Boolean actualReturnDateIsEmpty =
             newR.VRT_DAT_ActualReturnDate__c == null;
 
