@@ -412,6 +412,82 @@ static void testVehicleAvailabilityAllowsSameDayEndStart() {
     }
 
     @IsTest
+static void testVehicleAvailabilityBlocksOverlapInSameTransaction() {
+
+    // ========= ARRANGE =========
+
+    Account account = [
+        SELECT Id
+        FROM Account
+        WHERE Name = 'Cliente Test'
+        LIMIT 1
+    ];
+
+    VRT_Vehicle__c vehicle = new VRT_Vehicle__c(
+        VRT_TXT_LicensePlate__c = '5555EEE',
+        VRT_TXT_Brand__c = 'Ford',
+        VRT_SEL_VehicleType__c = 'Coche',
+        VRT_SEL_Status__c = 'Listo',
+        VRT_SEL_EnergyType__c = 'Gasolina',
+        VRT_NUM_Passengers__c = 4,
+        VRT_FLG_Available__c = true,
+        VRT_DAT_ManufacturedYear__c = Date.newInstance(2021, 1, 1),
+        VRT_FLG_NeedsInspection__c = false
+    );
+
+    insert vehicle;
+
+    // Dos Rentals nuevos del mismo vehículo que se solapan.
+    VRT_Rental__c rentalA = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(5),
+        VRT_DAT_FinalDate__c = Date.today().addDays(10)
+    );
+
+    VRT_Rental__c rentalB = new VRT_Rental__c(
+        VRT_LKP_Account__c = account.Id,
+        VRT_LKP_Vehicle__c = vehicle.Id,
+        VRT_SEL_Status__c = 'Reservado',
+        VRT_SEL_PaymentStatus__c = 'Pagado',
+        VRT_DAT_InitialDate__c = Date.today().addDays(8),
+        VRT_DAT_FinalDate__c = Date.today().addDays(12)
+    );
+
+    List<VRT_Rental__c> rentals =
+        new List<VRT_Rental__c>{ rentalA, rentalB };
+
+
+    // ========= ACT =========
+
+    Test.startTest();
+
+    VRT_CLS_RentalService.validateVehicleAvailability(
+        rentals,
+        null
+    );
+
+    Test.stopTest();
+
+
+    // ========= ASSERT =========
+
+    System.assertEquals(
+        1,
+        rentalA.getErrors().size(),
+        'El primer Rental debe detectar el solapamiento.'
+    );
+
+    System.assertEquals(
+        1,
+        rentalB.getErrors().size(),
+        'El segundo Rental debe detectar el solapamiento.'
+    );
+}
+
+    @IsTest
 static void testGetAvailableVehicles() {
 
     // ========= ARRANGE =========
@@ -751,5 +827,7 @@ static void testApprovalNotRequiredWhenAmountFallsBelowThreshold() {
         'La aprobación deja de ser necesaria cuando el coste baja a 3000 euros o menos.'
     );
 }
+
+
 
 }

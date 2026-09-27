@@ -2,8 +2,8 @@ public with sharing class VRT_CLS_RentalService {
 
     public static void calculateRentalPrices(List<VRT_Rental__c> rentals)
     {
-        Set<Id> vehicleIds = new Set<Id>();
-        Set<Id> accountsIds = new Set<id>();
+        Set<Id> vehicleIds = new Set<Id>();//para tipo de vehiculo
+        Set<Id> accountsIds = new Set<id>();//para contar alquileres completados
 
         for (VRT_Rental__c rental : rentals) {
             if (rental.VRT_LKP_Vehicle__c != null) {
@@ -17,20 +17,12 @@ public with sharing class VRT_CLS_RentalService {
         if (vehicleIds.isEmpty()) {
             return;
         }
-
-
-        Map<Id, VRT_Vehicle__c> vehiclesById =
-            new Map<Id, VRT_Vehicle__c>([
-                SELECT Id, VRT_SEL_VehicleType__c
-                FROM VRT_Vehicle__c
-                WHERE Id IN :vehicleIds
-            ]);
         
         Map<Id, Integer> completedRentalsByAccountId = 
             new Map<Id, Integer>();
 
-        if (!accountsIds.isEmpty()) {
-            for (AggregateResult ar : [
+            if (!accountsIds.isEmpty()) {
+                for (AggregateResult ar : [
                 SELECT
                     VRT_LKP_Account__c accountId,
                     COUNT(Id) completedCount
@@ -46,6 +38,14 @@ public with sharing class VRT_CLS_RentalService {
                 );
             }
         }
+
+        Map<Id, VRT_Vehicle__c> vehiclesById =
+            new Map<Id, VRT_Vehicle__c>([
+                SELECT Id, VRT_SEL_VehicleType__c
+                FROM VRT_Vehicle__c
+                WHERE Id IN :vehicleIds
+            ]);
+        
 
         for (VRT_Rental__c rental : rentals) {
             if (
@@ -147,6 +147,49 @@ public with sharing class VRT_CLS_RentalService {
                 rental.addError(
                     'El vehículo no está disponible para las fechas seleccionadas.'
                 );
+            }
+        }
+    }
+    for (Integer i= 0; i < rentals.size(); i++) {
+        VRT_Rental__c rentalA = rentals[i];
+
+        if (
+            rentalA.VRT_LKP_Vehicle__c == null ||
+            rentalA.VRT_DAT_InitialDate__c == null ||
+            rentalA.VRT_DAT_FinalDate__c == null ||
+            (
+                rentalA.VRT_SEL_Status__c != 'Reservado' &&
+                rentalA.VRT_SEL_Status__c != 'En curso'
+            )
+        ) {
+            continue;
+        }
+        for (Integer j = i + 1; j < rentals.size(); j++) {
+            VRT_Rental__c rentalB = rentals[j];
+            if (
+            rentalB.VRT_LKP_Vehicle__c == null ||
+            rentalB.VRT_DAT_InitialDate__c == null ||
+            rentalB.VRT_DAT_FinalDate__c == null ||
+            (
+                rentalB.VRT_SEL_Status__c != 'Reservado' &&
+                rentalB.VRT_SEL_Status__c != 'En curso'
+            )
+        ) {
+            continue;
+        }
+        if (rentalA.VRT_LKP_Vehicle__c != rentalB.VRT_LKP_Vehicle__c) {
+            continue;
+        }
+        Boolean datesOverlap =
+            rentalA.VRT_DAT_InitialDate__c < rentalB.VRT_DAT_FinalDate__c &&
+            rentalA.VRT_DAT_FinalDate__c > rentalB.VRT_DAT_InitialDate__c;
+        if (datesOverlap) {
+            rentalA.addError(
+                'El vehículo no está disponible para las fechas seleccionadas.'
+            );
+            rentalB.addError(
+                'El vehículo no está disponible para las fechas seleccionadas.'
+            );
             }
         }
     }
