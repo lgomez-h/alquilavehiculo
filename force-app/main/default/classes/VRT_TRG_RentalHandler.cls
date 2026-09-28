@@ -6,37 +6,17 @@ public with sharing class VRT_TRG_RentalHandler {
     //En after actuo despues de guardar
 
     public static void onAfterInsert(List<VRT_Rental__c> newRentals) {
+        
         VRT_TRG_RentalHandlerHelper.updateConditionVehicle(newRentals);
     }        
     
-    public static void onAfterUpdate(
-    Map<Id, VRT_Rental__c> oldMap,
-    Map<Id, VRT_Rental__c> newMap
-    ) {
+    public static void onAfterUpdate(Map<Id, VRT_Rental__c> oldMap,Map<Id, VRT_Rental__c> newMap) {
 
-        VRT_CLS_ApprovalService.updateRejectionReasons(
-            oldMap,
-            newMap
-        );
+        VRT_CLS_ApprovalService.updateRejectionReasons(oldMap,newMap);
         
         VRT_TRG_RentalHandlerHelper.updateVehicleRentalCompleted(oldMap, newMap);
-        // Enqueue job para crear facturas para los alquileres completados
-        Set<Id> rentalIdsToInvoice = new Set<Id>();
 
-        for (VRT_Rental__c rental : newMap.values()) {
-            VRT_Rental__c oldRental = oldMap.get(rental.Id);
-
-            if (
-                oldRental.VRT_SEL_Status__c == 'En curso' &&
-                rental.VRT_SEL_Status__c == 'Completado'
-            ) {
-                rentalIdsToInvoice.add(rental.Id);
-            }
-        }
-
-        if (!rentalIdsToInvoice.isEmpty()) {
-            System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalIdsToInvoice));
-        }
+        VRT_TRG_RentalHandlerHelper.completedRentalsToInvoice(oldMap, newMap);    
     }
 
     // En Before compruebo antes de guardar

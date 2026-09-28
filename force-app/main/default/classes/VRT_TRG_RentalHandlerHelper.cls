@@ -5,7 +5,7 @@ public without sharing class VRT_TRG_RentalHandlerHelper {
     // - Recalcular la condición del vehículo
     public static void updateConditionVehicle(
         List<VRT_Rental__c> newRentals
-    ) {
+    ){
 
         // 1) Contamos cuántos alquileres nuevos tiene cada vehículo.
         Map<Id, Integer> rentalsCountByVehicleId =
@@ -152,6 +152,7 @@ public without sharing class VRT_TRG_RentalHandlerHelper {
         if (uses <= 1000) return 'Bastante desgastado';
         return 'Deplorable';
     }
+    
     public static void setActualReturnDateWhenCompleted(
     Map<Id, VRT_Rental__c> oldMap,
     Map<Id, VRT_Rental__c> newMap
@@ -171,5 +172,25 @@ public without sharing class VRT_TRG_RentalHandlerHelper {
             newR.VRT_DAT_ActualReturnDate__c = Date.today();
         }
     }
-}
+    }
+
+    public static void completedRentalsToInvoice(Map<Id, VRT_Rental__c> oldMap, Map<Id, VRT_Rental__c> newMap) {
+
+        Set<Id> rentalIdsToInvoice = new Set<Id>();
+
+            for (VRT_Rental__c rental : newMap.values()) {
+                VRT_Rental__c oldRental = oldMap.get(rental.Id);
+
+                if (
+                    oldRental.VRT_SEL_Status__c == 'En curso' &&
+                    rental.VRT_SEL_Status__c == 'Completado'
+                ) {
+                    rentalIdsToInvoice.add(rental.Id);
+                }
+            }
+
+        if (!rentalIdsToInvoice.isEmpty()) {
+            System.enqueueJob(new VRT_CLS_InvoiceQueueable(rentalIdsToInvoice));
+        }
+    }
 }
